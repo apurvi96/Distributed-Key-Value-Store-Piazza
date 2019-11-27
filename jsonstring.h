@@ -23,7 +23,7 @@ string ack_data_string(string req_type, string message){
 	id - slave_server , client
 */
 string identity_string(string id){
-	string idstr = "{ \"req_type\" : \"identity\"" + ", \"id\" : \"" + id + "\" }";
+	string idstr = "{ \"req_type\" : \"identity\", \"id\" : \"" + id + "\" }";
 	return idstr;
 }
 	
@@ -31,8 +31,8 @@ string identity_string(string id){
 req_type - get , delete
 key - key
 */
-string get_delete_CS(string req_type, int key){
-	string gdreq = "{\"req_type\": \""   +   req_type    +    "\", \"key\" : \""+to_string(key) +"\"}";
+string get_delete_CS(string req_type, string key){
+	string gdreq = "{\"req_type\": \""   +   req_type    +    "\", \"key\" : \""+key +"\"}";
 	return gdreq;
 }
 
@@ -42,8 +42,8 @@ string get_delete_CS(string req_type, int key){
 	Key
 	Value
 */
-string put_update_CS(string req_type, int key, string value){
-	string pureq = " { \"req_type\" : \""   +req_type+   "\", \"key\" : \""   +to_string(key)+   "\", \"value\" : \""   
+string put_update_CS(string req_type, string key, string value){
+	string pureq = " { \"req_type\" : \""   +req_type+   "\", \"key\" : \""   +key+   "\", \"value\" : \""   
 					+value+   "\" } ";  
 	return pureq;
 }
@@ -83,8 +83,8 @@ string send_message_ready(string message){
 	Key
 	Table = own/prev
 */
-string get_delete_SS(string role, int key, string table){
-	string gdreq = " { \"role\" : \""   +role+   "\", \"key\" : \""   +to_string(key)+   "\",\"table\" : \""
+string get_delete_SS(string role, string key, string table){
+	string gdreq = " { \"role\" : \""   +role+   "\", \"key\" : \""   +key+   "\",\"table\" : \""
 					+table+   "\"} ";
 	return gdreq;
 }
@@ -95,8 +95,8 @@ string get_delete_SS(string role, int key, string table){
 	Key
 	Table = own/prev
 */
-string put_update_SS(string role, int key, string value, string table){
-	string pureq = " { \"role\" : \""   +role+   "\", \"key\" : \""   +to_string(key)+   "\", \"value\" : \""   
+string put_update_SS(string role, string key, string value, string table){
+	string pureq = " { \"role\" : \""   +role+   "\", \"key\" : \""   +key+   "\", \"value\" : \""   
 					+value+   "\", \"table\" : \""   +table+   "\" } ";  
 	return pureq;
 }
