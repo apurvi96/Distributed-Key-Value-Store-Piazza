@@ -23,6 +23,18 @@ string get_delete_CS(string req_type, int key){
 }
 
 
+/*client sends put/update request to CS
+	req_type=put,update
+	Key
+	Value
+*/
+string put_update_CS(string req_type, int key, string value){
+	string pureq = " { \"req_type\" : \""   +req_type+   "\", \"key\" : \""   +to_string(key)+   "\", \"value\" : \""   
+					+value+   "\" } ";  
+	return pureq;
+}
+
+
 /*handle migration - inform the leader slave server to proceed with migration
 	role - leader
 	pre_ip , succ_ip , s_of_succ_ip
@@ -51,5 +63,30 @@ string send_message_ready(string message){
 	string msgrdy = "{ \"message\" : \""   +message+   "\"}";
 	return msgrdy;
 }
+
+/*CS sends get/delete request to SS
+	req_type=get, delete
+	Key
+	Table = own/prev
+*/
+string get_delete_SS(string req_type, int key, string table){
+	string gdreq = " { \"req_type\" : \""   +req_type+   "\", \"key\" : \""   +to_string(key)+   "\",\"table\" : \""
+					+table+   "\"} ";
+	return gdreq;
+}
+
+
+/*CS sends put/update request to SS
+	req_type=put, update
+	Key
+	Table = own/prev
+*/
+string put_update_SS(string role, int key, string value, string table){
+	string pureq = " { \"role\" : \""   +role+   "\", \"key\" : \""   +to_string(key)+   "\", \"value\" : \""   
+					+value+   "\", \"table\" : \""   +table+   "\" } ";  
+	return pureq;
+}
+
+
 
 

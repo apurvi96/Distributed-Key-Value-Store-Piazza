@@ -10,12 +10,12 @@ using namespace std;
 
 Document doc;
 int main(){
-	string s=acknowledge_string("1","test");
+	string s=put_update_SS("1",1,"test","test2");
 	cout<<"json str= "<<s<<endl;
 
-	// In-situ parsing, decode strings directly in the source string. Source must be string.
+	// In-situ parsing, decode strings directly in the source string. Source must be string. And paramater must not be const char*
 	doc.ParseInsitu((char*)s.c_str());
-	cout<<"message= "<<doc["message"].GetString()<<endl;
+	cout<<"role= "<<doc["role"].GetString()<<endl;
 
 
 }
