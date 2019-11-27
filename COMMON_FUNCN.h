@@ -1,7 +1,7 @@
 #ifndef COMMON_FUNCN
 #define COMMON_FUNCN
 #include<bits/stdc++.h>
-#include<iostream> //basic inp outpuy
+#include<iostream> //basic inp output
 #include<stdio.h>
 #include<string.h>
 #include<sys/socket.h> //for socket creation
@@ -17,7 +17,8 @@
 using namespace std;
 typedef long long int ll;
 
-#define RING_SIZE
+#define RING_SIZE 16
+#define BUFF_SIZE 1024
 
 
 ll consistent_hash(string s, int M)
@@ -98,7 +99,7 @@ int initialize_socket(string ip,string port)
 	return sock_fd;
 }
 
-void connect_f(int sock_fd,string ip,string port)
+void connect_f(int sock_fd, string ip,string port)
 {
 
 	//converting port  to int
@@ -112,10 +113,10 @@ void connect_f(int sock_fd,string ip,string port)
 
 	//server structure
 	struct sockaddr_in ip_server;
-			ip_server.sin_family=AF_INET;
-			ip_server.sin_addr.s_addr =inet_addr(ip1);
-			//cout<<"cport is\n"<<cportn<<"\n";
-			ip_server.sin_port=htons(port1);
+	ip_server.sin_family=AF_INET;
+	ip_server.sin_addr.s_addr =inet_addr(ip1);
+	//cout<<"cport is\n"<<cportn<<"\n";
+	ip_server.sin_port=htons(port1);
 
 
 	int con=connect(sock_fd,(struct sockaddr*)&ip_server,sizeof(ip_server));
@@ -133,9 +134,9 @@ void send_message(int sock_fd, string  msg)
   //cout<<"string msg "<<msg<<endl; 
   char *char_pointer=(char*)msg.c_str();
   //cout<<"converted char pointer "<<char_pointer<<endl;
-  char char_array[1024];
+  char char_array[BUFF_SIZE];
   strcpy(char_array,char_pointer);
-  cout<<"char pointer into array "<<char_array<<endl;
+  cout<<"char pointer into array: "<<char_array<<endl;
   send(sock_fd,char_pointer,sizeof(char_array),0);
 
 }
@@ -143,12 +144,11 @@ void send_message(int sock_fd, string  msg)
 
 string receive_message(int ser_fd)
 {   //cout<<"ser_fd "<<ser_fd<<endl;
-	char Received_msg[1024]={0};
-    recv(ser_fd,Received_msg,1024,0);
+	char Received_msg[BUFF_SIZE]={0};
+    recv(ser_fd,Received_msg,BUFF_SIZE,0);
     //cout<<"rec msg "<<Received_msg<<endl;
     string Received_msg1=Received_msg;
     return Received_msg1;
-
 }
 
 

@@ -16,7 +16,7 @@ int main(int argc,char **argv)
 	
 	int sock_fd=initialize_socket(ip_address,port_number);
 
-	cout<<"soket id is"<<sock_fd<<endl;
+	cout<<"socket id is"<<sock_fd<<endl;
 
 
 	//listen

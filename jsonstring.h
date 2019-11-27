@@ -7,20 +7,32 @@ using namespace std;
 //SS: Slave Server
 //leader slave server: the successor of the slave server that went down
 
-/*req_type - ack
-	message - client_connected , slave_server_connected
+
+/*Used to send either acknowledgemnt(parse_error, key_error, successful put, del, update), or 
+for successful get, use it to send data from SS to CS, or data from CS to Client  
+	req_type - ack, data
+	message - client_connected , slave_server_connected, {actual value via get opn}, parse_error, key_error, put_success, 
+			delete_success, update_success
 */
-string acknowledge_string(string req_type, string message){
-	string ackstr = "{ \"request_type\" : \"" + req_type + "\", \"message\" : \"" + message + "\" }";
+string ack_data_string(string req_type, string message){
+	string ackstr = "{ \"req_type\" : \"" + req_type + "\", \"message\" : \"" + message + "\" }";
 	return ackstr;
+}
+
+/*informs CS if SS is connecting to it or Client
+	id - slave_server , client
+*/
+string identity_string(string id){
+	string idstr = "{ \"req_type\" : \"identity\", \"id\" : \"" + id + "\" }";
+	return idstr;
 }
 	
 /*client send get/delete requests to CS
 req_type - get , delete
 key - key
 */
-string get_delete_CS(string req_type, int key){
-	string gdreq = "{\"request_type\": \""   +   req_type    +    "\", \"key\" : \""+to_string(key) +"\"}";
+string get_delete_CS(string req_type, string key){
+	string gdreq = "{\"req_type\": \""   +   req_type    +    "\", \"key\" : \""+key +"\"}";
 	return gdreq;
 }
 
@@ -30,8 +42,8 @@ string get_delete_CS(string req_type, int key){
 	Key
 	Value
 */
-string put_update_CS(string req_type, int key, string value){
-	string pureq = " { \"req_type\" : \""   +req_type+   "\", \"key\" : \""   +to_string(key)+   "\", \"value\" : \""   
+string put_update_CS(string req_type, string key, string value){
+	string pureq = " { \"req_type\" : \""   +req_type+   "\", \"key\" : \""   +key+   "\", \"value\" : \""   
 					+value+   "\" } ";  
 	return pureq;
 }
@@ -49,7 +61,7 @@ string inform_leader_migration(string role, string pre_ip, string succ_ip, strin
 
 
 /*update table to other member slave server
-	role - member
+	role - pre, succ_of_succ
 	table - own,prev
 */
 string update_table_SS(string role, string table){
@@ -57,9 +69,9 @@ string update_table_SS(string role, string table){
 	return updtss;
 }
 
-/*send message from succ of succ to SS leader
+/*send message from succ of succ to SS leader,
 	Send message from leader slave server to CS that migration done
-	message - “ready for table” , “migration completed”
+	message - “ready_for_table” , “migration_completed”
 */
 string send_message_ready(string message){
 	string msgrdy = "{ \"message\" : \""   +message+   "\"}";
@@ -71,8 +83,8 @@ string send_message_ready(string message){
 	Key
 	Table = own/prev
 */
-string get_delete_SS(string req_type, int key, string table){
-	string gdreq = " { \"req_type\" : \""   +req_type+   "\", \"key\" : \""   +to_string(key)+   "\",\"table\" : \""
+string get_delete_SS(string role, string key, string table){
+	string gdreq = " { \"role\" : \""   +role+   "\", \"key\" : \""   +key+   "\",\"table\" : \""
 					+table+   "\"} ";
 	return gdreq;
 }
@@ -83,11 +95,14 @@ string get_delete_SS(string req_type, int key, string table){
 	Key
 	Table = own/prev
 */
-string put_update_SS(string role, int key, string value, string table){
-	string pureq = " { \"role\" : \""   +role+   "\", \"key\" : \""   +to_string(key)+   "\", \"value\" : \""   
+string put_update_SS(string role, string key, string value, string table){
+	string pureq = " { \"role\" : \""   +role+   "\", \"key\" : \""   +key+   "\", \"value\" : \""   
 					+value+   "\", \"table\" : \""   +table+   "\" } ";  
 	return pureq;
 }
+
+
+
 
 #endif
 
