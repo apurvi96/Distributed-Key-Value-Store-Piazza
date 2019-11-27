@@ -8,9 +8,11 @@ using namespace std;
 //leader slave server: the successor of the slave server that went down
 
 
-/*Used to send either acknowledgemnt(parse_error, successful put, del, update), or for successful get, use it to send data from SS to CS, or data from CS to Client  
+/*Used to send either acknowledgemnt(parse_error, key_error, successful put, del, update), or 
+for successful get, use it to send data from SS to CS, or data from CS to Client  
 	req_type - ack, data
-	message - client_connected , slave_server_connected, {actual value via get opn}, parse_error, put_success, delete_success, update_success
+	message - client_connected , slave_server_connected, {actual value via get opn}, parse_error, key_error, put_success, 
+			delete_success, update_success
 */
 string ack_data_string(string req_type, string message){
 	string ackstr = "{ \"req_type\" : \"" + req_type + "\", \"message\" : \"" + message + "\" }";
@@ -59,7 +61,7 @@ string inform_leader_migration(string role, string pre_ip, string succ_ip, strin
 
 
 /*update table to other member slave server
-	role - member
+	role - pre, succ_of_succ
 	table - own,prev
 */
 string update_table_SS(string role, string table){
@@ -67,7 +69,7 @@ string update_table_SS(string role, string table){
 	return updtss;
 }
 
-/*send message from succ of succ to SS leader
+/*send message from succ of succ to SS leader,
 	Send message from leader slave server to CS that migration done
 	message - “ready_for_table” , “migration_completed”
 */
