@@ -8,9 +8,9 @@ using namespace std;
 //leader slave server: the successor of the slave server that went down
 
 
-/*Used to send either acknowledgemnt, or data from SS to CS, or data from CS to Client that it got via get opn  
+/*Used to send either acknowledgemnt(parse_error, successful put, del, update), or for successful get, use it to send data from SS to CS, or data from CS to Client  
 	req_type - ack, data
-	message - client_connected , slave_server_connected, {actual value via get opn}, parse_error
+	message - client_connected , slave_server_connected, {actual value via get opn}, parse_error, put_success, delete_success, update_success
 */
 string ack_data_string(string req_type, string message){
 	string ackstr = "{ \"req_type\" : \"" + req_type + "\", \"message\" : \"" + message + "\" }";
