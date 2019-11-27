@@ -7,12 +7,22 @@ using namespace std;
 //SS: Slave Server
 //leader slave server: the successor of the slave server that went down
 
-/*req_type - ack
-	message - client_connected , slave_server_connected
+
+/*Used to send either acknowledgemnt, or data from SS to CS, or data from CS to Client that it got via get opn  
+	req_type - ack, data
+	message - client_connected , slave_server_connected, {actual value via get opn}
 */
-string acknowledge_string(string req_type, string message){
-	string ackstr = "{ \"request_type\" : \"" + req_type + "\", \"message\" : \"" + message + "\" }";
+string ack_data_string(string req_type, string message){
+	string ackstr = "{ \"req_type\" : \"" + req_type + "\", \"message\" : \"" + message + "\" }";
 	return ackstr;
+}
+
+/*informs CS if SS is connecting to it or Client
+	id - slave_server , client
+*/
+string identity_string(string id){
+	string idstr = "{ \"req_type\" : \"identity\"" + ", \"id\" : \"" + id + "\" }";
+	return idstr;
 }
 	
 /*client send get/delete requests to CS
@@ -20,7 +30,7 @@ req_type - get , delete
 key - key
 */
 string get_delete_CS(string req_type, int key){
-	string gdreq = "{\"request_type\": \""   +   req_type    +    "\", \"key\" : \""+to_string(key) +"\"}";
+	string gdreq = "{\"req_type\": \""   +   req_type    +    "\", \"key\" : \""+to_string(key) +"\"}";
 	return gdreq;
 }
 
@@ -59,7 +69,7 @@ string update_table_SS(string role, string table){
 
 /*send message from succ of succ to SS leader
 	Send message from leader slave server to CS that migration done
-	message - “ready for table” , “migration completed”
+	message - “ready_for_table” , “migration_completed”
 */
 string send_message_ready(string message){
 	string msgrdy = "{ \"message\" : \""   +message+   "\"}";
@@ -71,8 +81,8 @@ string send_message_ready(string message){
 	Key
 	Table = own/prev
 */
-string get_delete_SS(string req_type, int key, string table){
-	string gdreq = " { \"req_type\" : \""   +req_type+   "\", \"key\" : \""   +to_string(key)+   "\",\"table\" : \""
+string get_delete_SS(string role, int key, string table){
+	string gdreq = " { \"role\" : \""   +role+   "\", \"key\" : \""   +to_string(key)+   "\",\"table\" : \""
 					+table+   "\"} ";
 	return gdreq;
 }
@@ -88,6 +98,9 @@ string put_update_SS(string role, int key, string value, string table){
 					+value+   "\", \"table\" : \""   +table+   "\" } ";  
 	return pureq;
 }
+
+
+
 
 #endif
 
