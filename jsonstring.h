@@ -10,7 +10,7 @@ using namespace std;
 
 /*Used to send either acknowledgemnt, or data from SS to CS, or data from CS to Client that it got via get opn  
 	req_type - ack, data
-	message - client_connected , slave_server_connected, {actual value via get opn}
+	message - client_connected , slave_server_connected, {actual value via get opn}, parse_error
 */
 string ack_data_string(string req_type, string message){
 	string ackstr = "{ \"req_type\" : \"" + req_type + "\", \"message\" : \"" + message + "\" }";
