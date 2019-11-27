@@ -1,3 +1,5 @@
+#ifndef jsonstring
+#define jsonstring
 #include <bits/stdc++.h>
 using namespace std;
 
@@ -87,7 +89,7 @@ string put_update_SS(string role, int key, string value, string table){
 	return pureq;
 }
 
-
+#endif
 
 
 
