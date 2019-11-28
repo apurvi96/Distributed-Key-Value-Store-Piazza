@@ -11,6 +11,8 @@ using namespace rapidjson;
 
 Document document;
 
+
+
 void* serve_requests(void* threadargs)
 {
 	cout<<"in serve requests"<<endl;
