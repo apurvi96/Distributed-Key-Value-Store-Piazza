@@ -100,7 +100,29 @@ int initialize_socket(string ip,string port)
 }
 
 
+int initialize_socket_without_bind()
+{
+	int sock_fd=socket(AF_INET,SOCK_STREAM,0);
 
+		if(sock_fd<0)
+		{
+			perror("ERROR IN SOCKET CREATION");
+		
+		}
+
+	//setopt 
+	int opt=3;
+	int setopt=setsockopt(sock_fd,SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT ,&opt,sizeof(opt));
+
+		if(setopt<0)
+		{
+			perror(" SOCKOPT FAILED");
+				
+		}
+
+		return sock_fd;
+
+}
 void connect_f(int sock_fd, string ip,string port)
 {
 
