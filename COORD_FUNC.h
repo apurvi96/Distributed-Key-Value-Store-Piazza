@@ -48,6 +48,9 @@ int connect_without_bind(int sock_id,string ip,string port)
 
 
 }
+
+
+
 // write ip port to file for slave servers and clients to access
 void write_to_file(string ip, string port)
 {
@@ -85,7 +88,8 @@ int connect_to_the_slave(string ip,string port,string cs_ip,string cs_port)
 
 // taking value from the respective slave server 
 string get_from_slave(char *ip_address,char *port_number,string cs_ip,string cs_port,string key,string table)
-{   string ip=ip_address;
+{   
+    string ip=ip_address;
     string port=port_number;
     // we need connection two times one for succ and other for succ_of succ and also for put so making connect function
     
@@ -98,10 +102,42 @@ string get_from_slave(char *ip_address,char *port_number,string cs_ip,string cs_
     cout<<"in get_from_slave -- value received from slave "<<value<<endl;
     return value;
     
-
-   
+  
 }
 
+
+void put_on_slave(char *ip_address,char *port_number,string cs_ip,string cs_port,string key,string value,string table)
+{   string ip=ip_address;
+    string port=port_number;
+    // we need connection two times one for succ and other for succ_of succ and also for put so making connect function
+    
+    int sock_fd=connect_to_the_slave(ip,port,cs_ip,cs_port);
+    if(sock_fd<0)   
+        cout<<"Not connected";
+    // send key to get value from SS
+    send_message(sock_fd,put_update_SS("put",key,value,table));
+    string value1=receive_message(sock_fd);
+    //cout<<"in put_on_slave -- value received from slave "<<value1<<endl;
+    cout<<"value placed in "<<table<<" "<<"value is : "<<value1<<endl;
+    
+}
+
+
+string delete_from_slave(string ip_address,string port_number,string cs_ip,string cs_port,string key,string table)
+{
+    string ip=ip_address;
+    string port=port_number;
+    // we need connection two times one for succ and other for succ_of succ and also for put so making connect function
+    
+    int sock_fd=connect_to_the_slave(ip,port,cs_ip,cs_port);
+    if(sock_fd<0)   
+        return "Not connected";
+    // send key to get value from SS
+    send_message(sock_fd,get_delete_SS("delete",key,table));
+    string value=receive_message(sock_fd);
+    cout<<"in delete_from_slave -- value received from slave "<<value<<endl;
+    return value;
+}
 
 void serve_get_request(int connectfd,string key,string ip_port_cs)
 {
@@ -134,8 +170,9 @@ void serve_get_request(int connectfd,string key,string ip_port_cs)
     
     //extract ip and port of succ slave server
    char* ip_port_avl=(char*)(succ->ip_plus_port).c_str();
-
-    char* ip_address=strtok(ip_port_avl,":");
+    char ar[1024];
+    strcpy(ar,ip_port_avl);
+    char* ip_address=strtok(ar,":");
     char* port_number=strtok(NULL,":");
 
     // connecting to the respective slave:
@@ -154,7 +191,8 @@ void serve_get_request(int connectfd,string key,string ip_port_cs)
       int hash_value_succ_slave=consistent_hash(ipport_new_id);
       av_sec.Suc(root,pree,succ_of_succ,hash_value_succ_slave);
       char* ip_port_avl1=(char*)(succ_of_succ->ip_plus_port).c_str();
-      char* ip_address1=strtok(ip_port_avl1,":");
+      strcpy(ar,ip_port_avl1);
+      char* ip_address1=strtok(ar,":");
       char* port_number1=strtok(NULL,":");
       string value1=get_from_slave(ip_address1,port_number1,cs_ip,cs_port,key,"prev");
        
@@ -172,12 +210,144 @@ void serve_get_request(int connectfd,string key,string ip_port_cs)
 
     } 
 
+}
+
+
+
+
+void serve_put_request(int connectfd,string key,string value,string ip_port_cs)
+{
+   
+
+    char* ip_port_cs_char=(char*)(ip_port_cs).c_str();
+
+    // fetch ip and port of CS to connect succ and succ_of_succ
+    char* ip_cs_char=strtok(ip_port_cs_char,":");
+    char* port_cs_char=strtok(NULL,":");   
+    string cs_ip=ip_cs_char;
+    string cs_port=port_cs_char;
+
+    int hash_value=consistent_hash(key);
+    cout<<"hashed value key hashed"<<hash_value<<endl;
+
+    // get IP and port of successor from AVL
+    avl_tree av;
+    Node *pre,*succ; 
+    av.Suc(root,pre,succ,hash_value);
+    if(succ != NULL)
+    {
+        cout<<"fetched form AVL"<<succ->key<<" "<<succ->ip_plus_port<<endl;
+    }
+    else
+        cout<<"No slave server is active"<<endl;
     
+    //extract ip and port of succ slave server
+   char* ip_port_avl=(char*)(succ->ip_plus_port).c_str();
+    char ar[1024];
+    strcpy(ar,ip_port_avl); 
+    char* ip_address=strtok(ar,":");
+    char* port_number=strtok(NULL,":");
+    cout<<"ip_plus_port_after TOK "<<succ->ip_plus_port<<endl;
+    //put value in own table of successor
+    put_on_slave(ip_address,port_number,cs_ip,cs_port,key,value,"own");
+    //send_message(connectfd,ack_data_string("ack","put_success"));
+  
+   // putting value in prev table in succ_of_succ
+   
+    int hash_value1=consistent_hash(succ->ip_plus_port);
+    cout<<"hashed value key hashed"<<hash_value1<<endl;
 
-
-
+    // get IP and port of successor from AVL
+    avl_tree av1;
+    Node *pre1,*succ1; 
+    av.Suc(root,pre1,succ1,hash_value1);
+    if(succ1 != NULL)
+    {
+        cout<<"fetched form AVL"<<succ1->key<<" "<<succ1->ip_plus_port<<endl;
+        //extract ip and port of succ slave server
+        char* ip_port_avl1=(char*)(succ1->ip_plus_port).c_str();
+         strcpy(ar,ip_port_avl1);
+        char* ip_address1=strtok(ar,":");
+        char* port_number1=strtok(NULL,":");
+        //put value in own table of successor
+        put_on_slave(ip_address1,port_number1,cs_ip,cs_port,key,value,"prev");
+    }
+    else
+        cout<<"No other slave server is active"<<endl;
+    
+    
+    send_message(connectfd,ack_data_string("ack","put_success"));
 
 }
+
+
+void serve_delete_request(int connectfd,string key,string ip_port_cs)
+{
+    char* ip_port_cs_char=(char*)(ip_port_cs).c_str();
+
+    // fetch ip and port of CS to connect succ and succ_of_succ
+    char* ip_cs_char=strtok(ip_port_cs_char,":");
+    char* port_cs_char=strtok(NULL,":");   
+    string cs_ip=ip_cs_char;
+    string cs_port=port_cs_char;
+
+    int hash_value=consistent_hash(key);
+    cout<<"hashed value key hashed"<<hash_value<<endl;
+
+    // get IP and port of successor from AVL
+    avl_tree av;
+    Node *pre,*succ; 
+    av.Suc(root,pre,succ,hash_value);
+    if(succ != NULL)
+    {
+        cout<<"fetched form AVL"<<succ->key<<" "<<succ->ip_plus_port<<endl;
+    }
+    else
+    {   
+        cout<<"No slave server is active"<<endl;
+        send_message(connectfd,ack_data_string("ack","delete_failed"));
+        return;
+    }
+    
+    //extract ip and port of succ slave server
+    char* ip_port_avl=(char*)(succ->ip_plus_port).c_str();
+    char ar[1024];
+    strcpy(ar,ip_port_avl);
+    char* ip_address=strtok(ar,":");
+    char* port_number=strtok(NULL,":");
+
+    //delete from own table of successor
+    string value=delete_from_slave(ip_address,port_number,cs_ip,cs_port,key,"own");
+    cout<<"Deleted from own table of successor "<<value;
+
+    // find succ_of_succ
+     int hash_value1=consistent_hash(succ->ip_plus_port);
+    cout<<"hashed value key hashed"<<hash_value1<<endl;
+
+    // get IP and port of successor from AVL
+    avl_tree av1;
+    Node *pre1,*succ1; 
+    av.Suc(root,pre1,succ1,hash_value1);
+    string value1;
+    if(succ1 != NULL)
+    {
+        cout<<"fetched form AVL"<<succ1->key<<" "<<succ1->ip_plus_port<<endl;
+        //extract ip and port of succ slave server
+        char* ip_port_avl1=(char*)(succ1->ip_plus_port).c_str();
+         strcpy(ar,ip_port_avl1);
+        char* ip_address1=strtok(ar,":");
+        char* port_number1=strtok(NULL,":");
+        //put value in own table of successor
+        value1=delete_from_slave(ip_address1,port_number1,cs_ip,cs_port,key,"prev");
+        cout<<value1<<endl;
+    }
+    else
+        cout<<"No other slave server is active"<<endl;
+
+    send_message(connectfd,value1);
+
+}
+
 
 
 
@@ -185,25 +355,62 @@ void serve_get_request(int connectfd,string key,string ip_port_cs)
 void request_of_client(int connectfd,string ip_port_cs)
 {
     string s;
-    s=receive_message(connectfd);
-    if(document1.ParseInsitu((char*)s.c_str()).HasParseError())
+    while(1)
     {
-    	cout<<"error in request for client parsing string"<<endl;
-    	send_message(connectfd,ack_data_string("ack","parse_error"));
-    }
-    
-    else if(strcmp(document1["req_type"].GetString(),"get")==0)
-    {   
-    	/* TODO TESTING 
-            -- more than one SS
-            -- when key is present get value
-        */
-        assert(document1.IsObject());
-    	assert(document1.HasMember("key"));
-        string key_v=document1["key"].GetString();
-       // send_message(connectfd,ack_data_string("ack","in parse"));
-        serve_get_request(connectfd,key_v,ip_port_cs);
-         
+        /* TODO Coord mar ra h client k jate hi why why why??? */
+        s=receive_message(connectfd);
+        if(document1.ParseInsitu((char*)s.c_str()).HasParseError())
+        {
+        	cout<<"error in request for client parsing string"<<endl;
+        	send_message(connectfd,ack_data_string("ack","parse_error"));
+        }
+        
+        else if(strcmp(document1["req_type"].GetString(),"get")==0)
+        {   
+        	
+
+            /* TODO TESTING 
+                -- more than one SS
+                -- when key is present get value
+            */
+            assert(document1.IsObject());
+        	assert(document1.HasMember("key"));
+            string key_v=document1["key"].GetString();
+           // send_message(connectfd,ack_data_string("ack","in parse"));
+            serve_get_request(connectfd,key_v,ip_port_cs);
+             
+        }
+
+        else if(strcmp(document1["req_type"].GetString(),"put")==0)
+        {  
+            
+          /*TODO  testing with two slave servers
+            check value and iterate map
+            */
+
+            assert(document1.IsObject());
+            assert(document1.HasMember("key"));
+            assert(document1.HasMember("value"));
+            string key_v=document1["key"].GetString();
+            string value_v=document1["value"].GetString();
+            serve_put_request(connectfd,key_v,value_v,ip_port_cs);
+             
+        }  
+
+        else if(strcmp(document1["req_type"].GetString(),"delete")==0)
+        {   
+            
+
+            /* TODO  
+                check in cache if present delete and continue
+            */
+            assert(document1.IsObject());
+            assert(document1.HasMember("key"));
+            string key_v=document1["key"].GetString();
+           // send_message(connectfd,ack_data_string("ack","in parse"));
+            serve_delete_request(connectfd,key_v,ip_port_cs);
+             
+        } 
     }
 
 
