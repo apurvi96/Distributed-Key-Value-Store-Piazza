@@ -21,7 +21,7 @@ typedef long long int ll;
 #define BUFF_SIZE 1024
 
 
-ll consistent_hash(string s, int M)
+int consistent_hash(string s, int M=RING_SIZE)
  {
      int intLength = s.length() / 4;
      long sum = 0;
@@ -98,6 +98,8 @@ int initialize_socket(string ip,string port)
 
 	return sock_fd;
 }
+
+
 
 void connect_f(int sock_fd, string ip,string port)
 {
