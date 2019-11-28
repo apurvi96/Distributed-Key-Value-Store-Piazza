@@ -99,6 +99,8 @@ int initialize_socket(string ip,string port)
 	return sock_fd;
 }
 
+
+
 void connect_f(int sock_fd, string ip,string port)
 {
 
