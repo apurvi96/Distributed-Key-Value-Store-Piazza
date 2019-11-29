@@ -19,6 +19,7 @@ typedef long long int ll;
 
 #define RING_SIZE 16
 #define BUFF_SIZE 1024
+#define UDP_PORT 3769
 
 
 int consistent_hash(string s, int M=RING_SIZE)
