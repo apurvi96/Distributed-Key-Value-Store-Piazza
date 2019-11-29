@@ -95,28 +95,7 @@ int main(int argc,char **argv)
 	pthread_t newThread[10];
 	int i=0;
 	cout<<"ready to accept"<<endl;
-	// connectfd=accept(sock_fd,(struct sockaddr *)&ip_client,(socklen_t*)&len);
-	// send_message(connectfd,ack_data_string("ack","slave_server_connected"));
-	//accepting connections and creating new threads for clients
-	// while(connectfd=accept(sock_fd,(struct sockaddr *)&ip_client,(socklen_t*)&len)>0)
-	// {
-	// 	cout<<receive_message(connectfd);
-	// 	cout<<"in accept"<<endl;
-	// 	// struct thread_struct* th=new thread_struct();
-	// 	// th->sockfd=connectfd;
-		// char* ipclient=new char[INET_ADDRSTRLEN];
-		// inet_ntop(AF_INET,&(ip_client.sin_addr),ipclient,INET_ADDRSTRLEN);
-		// th->ip_plus_port=string(ipclient)+":"+to_string(ntohs(ip_client.sin_port));
-		// cout<<th->ip_plus_port<<endl;
-	// 	//send_message(connectfd,ack_data_string("ack","slave_server_connected"));
-	// 	//receive_message(connectfd);
-		// pthread_create(&newThread[i],NULL,serve_requests,(void*)th);
-		// pthread_join(newThread[i],NULL);
-	// 	// i++;
-	// 	cout<<"returned"<<endl;
-	// 	close(connectfd);
-		
-	// }
+	
 
 	while(1){
 		connectfd=accept(sock_fd,(struct sockaddr *)&ip_client,(socklen_t*)&len);
