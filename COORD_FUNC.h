@@ -135,14 +135,12 @@ string delete_from_slave(int sock_fd,string ip_address,string port_number,string
     return value;
 }
 
-void update_on_slave(char *ip_address,char *port_number,string cs_ip,string cs_port,string key,string value,string table)
+void update_on_slave(int sock_fd,char *ip_address,char *port_number,string cs_ip,string cs_port,string key,string value,string table)
 {   string ip=ip_address;
     string port=port_number;
     // we need connection two times one for succ and other for succ_of succ and also for put so making connect function
     
-    int sock_fd=connect_to_the_slave(ip,port,cs_ip,cs_port);
-    if(sock_fd<0)   
-        cout<<"Not connected";
+    
     // send key to get value from SS
     send_message(sock_fd,put_update_SS("update",key,value,table));
     string value1=receive_message(sock_fd);
@@ -337,7 +335,7 @@ void serve_delete_request(int connectfd,string key,string ip_port_cs)
     char* ip_address=strtok(ar,":");
     char* port_number=strtok(NULL,":");
 
-    int sock_fd1=connect_to_the_slave(connectfd,ip_address,port_number,cs_ip,cs_port);
+    int sock_fd1=connect_to_the_slave(ip_address,port_number,cs_ip,cs_port);
     
     // find succ_of_succ
      int hash_value1=consistent_hash(succ->ip_plus_port);
@@ -355,14 +353,15 @@ void serve_delete_request(int connectfd,string key,string ip_port_cs)
     char* ip_address1=strtok(ar,":");
     char* port_number1=strtok(NULL,":");
 
-    int sock_fd2=connect_to_the_slave(connectfd,ip_address1,port_number1,cs_ip,cs_port);
+    int sock_fd2=connect_to_the_slave(ip_address1,port_number1,cs_ip,cs_port);
 
-    int value,value1;
+    string value,value1;
 
     if(sock_fd1 > 0 && sock_fd2 > 0)
-    {
-        value=delete_from_slave(ip_address,port_number,cs_ip,cs_port,key,"own");
-        value1=delete_from_slave(ip_address1,port_number1,cs_ip,cs_port,key,"prev");
+    {   //delete from own table of succ 
+        value=delete_from_slave(sock_fd1,ip_address,port_number,cs_ip,cs_port,key,"own");
+        //delete from prev table of succ_of_succ
+        value1=delete_from_slave(sock_fd2,ip_address1,port_number1,cs_ip,cs_port,key,"prev");
         send_message(connectfd,value1);
     }
     else
@@ -394,12 +393,6 @@ void serve_update_request(int connectfd,string key,string value,string ip_port_c
     avl_tree av;
     Node *pre,*succ; 
     av.Suc(root,pre,succ,hash_value);
-    if(succ != NULL)
-    {
-        cout<<"fetched form AVL"<<succ->key<<" "<<succ->ip_plus_port<<endl;
-    }
-    else
-        cout<<"No slave server is active"<<endl;
     
     //extract ip and port of succ slave server
     char* ip_port_avl=(char*)(succ->ip_plus_port).c_str();
@@ -408,112 +401,67 @@ void serve_update_request(int connectfd,string key,string value,string ip_port_c
     char* ip_address=strtok(ar,":");
     char* port_number=strtok(NULL,":");
     cout<<"ip_plus_port_after TOK "<<succ->ip_plus_port<<endl;
-     update_on_slave(ip_address,port_number,cs_ip,cs_port,key,value,"own");
-     //send_message(connectfd,ack_data_string("ack","put_success"));
+
+    int sock_fd1=connect_to_the_slave(ip_address,port_number,cs_ip,cs_port);
+    
+
+    
+    //send_message(connectfd,ack_data_string("ack","put_success"));
   
-   // putting value in prev table in succ_of_succ
+    // putting value in prev table in succ_of_succ
    
-    int hash_value1=consistent_hash(succ->ip_plus_port);
-    cout<<"hashed value key hashed"<<hash_value1<<endl;
-
-    // get IP and port of successor from AVL
-    avl_tree av1;
-    Node *pre1,*succ1; 
-    av.Suc(root,pre1,succ1,hash_value1);
-    if(succ1 != NULL)
-    {
-        cout<<"fetched form AVL"<<succ1->key<<" "<<succ1->ip_plus_port<<endl;
-        //extract ip and port of succ slave server
-        char* ip_port_avl1=(char*)(succ1->ip_plus_port).c_str();
-         strcpy(ar,ip_port_avl1);
-        char* ip_address1=strtok(ar,":");
-        char* port_number1=strtok(NULL,":");
-        //put value in own table of successor
-        update_on_slave(ip_address1,port_number1,cs_ip,cs_port,key,value,"prev");
-    }
-    else
-        cout<<"No other slave server is active"<<endl;
-    
-    
-    send_message(connectfd,ack_data_string("ack","update_success"));
-
-
-}
-
-
-
-<<<<<<< HEAD
-
-
-
-void serve_update_request(int connectfd,string key,string value,string ip_port_cs)
-{
-
-  char* ip_port_cs_char=(char*)(ip_port_cs).c_str();
-
-    // fetch ip and port of CS to connect succ and succ_of_succ
-    char* ip_cs_char=strtok(ip_port_cs_char,":");
-    char* port_cs_char=strtok(NULL,":");   
-    string cs_ip=ip_cs_char;
-    string cs_port=port_cs_char;
-
-    int hash_value=consistent_hash(key);
-    cout<<"hashed value key hashed"<<hash_value<<endl;
-
-    // get IP and port of successor from AVL
-    avl_tree av;
-    Node *pre,*succ; 
-    av.Suc(root,pre,succ,hash_value);
+   
+     
     if(succ != NULL)
     {
-        cout<<"fetched form AVL"<<succ->key<<" "<<succ->ip_plus_port<<endl;
+         cout<<"fetched form AVL"<<succ->key<<" "<<succ->ip_plus_port<<endl;
+         
+
     }
     else
+        
+    {
         cout<<"No slave server is active"<<endl;
+        send_message(connectfd,ack_data_string("ack","update_failed"));
+        return;
+    }
     
-    //extract ip and port of succ slave server
-    char* ip_port_avl=(char*)(succ->ip_plus_port).c_str();
-    char ar[1024];
-    strcpy(ar,ip_port_avl); 
-    char* ip_address=strtok(ar,":");
-    char* port_number=strtok(NULL,":");
-    cout<<"ip_plus_port_after TOK "<<succ->ip_plus_port<<endl;
-     update_on_slave(ip_address,port_number,cs_ip,cs_port,key,value,"own");
-     //send_message(connectfd,ack_data_string("ack","put_success"));
-  
-   // putting value in prev table in succ_of_succ
-   
     int hash_value1=consistent_hash(succ->ip_plus_port);
     cout<<"hashed value key hashed"<<hash_value1<<endl;
+
 
     // get IP and port of successor from AVL
     avl_tree av1;
     Node *pre1,*succ1; 
     av.Suc(root,pre1,succ1,hash_value1);
-    if(succ1 != NULL)
-    {
-        cout<<"fetched form AVL"<<succ1->key<<" "<<succ1->ip_plus_port<<endl;
+    cout<<"fetched form AVL"<<succ1->key<<" "<<succ1->ip_plus_port<<endl;
         //extract ip and port of succ slave server
-        char* ip_port_avl1=(char*)(succ1->ip_plus_port).c_str();
-         strcpy(ar,ip_port_avl1);
-        char* ip_address1=strtok(ar,":");
-        char* port_number1=strtok(NULL,":");
+    char* ip_port_avl1=(char*)(succ1->ip_plus_port).c_str();
+    strcpy(ar,ip_port_avl1);
+    char* ip_address1=strtok(ar,":");
+    char* port_number1=strtok(NULL,":");
         //put value in own table of successor
-        put_on_slave(ip_address1,port_number1,cs_ip,cs_port,key,value,"prev");
+
+    int sock_fd2=connect_to_the_slave(ip_address1,port_number1,cs_ip,cs_port);
+    
+
+    if(sock_fd1>0&&sock_fd2>0)
+    {
+       
+       update_on_slave(sock_fd1,ip_address,port_number,cs_ip,cs_port,key,value,"own");
+       update_on_slave(sock_fd2,ip_address1,port_number1,cs_ip,cs_port,key,value,"prev");
+       send_message(connectfd,ack_data_string("ack","update_success"));
     }
     else
-        cout<<"No other slave server is active"<<endl;
-    
-    
-    send_message(connectfd,ack_data_string("ack","update_success"));
-
+    {
+        send_message(connectfd,ack_data_string("ack","commit_failed"));
+   
+    }
 
 }
 
 
 
-=======
->>>>>>> updated json
 void request_of_client(int connectfd,string ip_port_cs)
 {
     string s;
