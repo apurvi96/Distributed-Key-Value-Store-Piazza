@@ -12,7 +12,7 @@ Document document1;
 
 #define FILENAME "cs_config.txt"
 
-//**************************************do get and delete together***************************************//
+//**************************************do get and delete together*****************************************//
 
 void request_for_get_delete(string type,string key,int sock_fd)
 {
