@@ -74,6 +74,20 @@ int main(int argc,char **argv)
 	cout<<"my port: "<<port<<endl;
 	write_to_file(ip,port);
 
+    // pthread for heartbeat checking
+
+	pthread_t heartbeat_thread;
+	pthread_t time_thread;
+    
+	struct heartbeat_struct* hs=new heartbeat_struct();
+	hs->ip_cs=ip;
+	pthread_create(&heartbeat_thread,NULL,heartbeat_func,(void*)hs);
+
+    // pthread for timer
+
+	pthread_t time_thread;
+	pthread_create(&time_thread,NULL,timer,NULL);
+
 	int sock_fd=initialize_socket(ip,port);
 
 	cout<<"socket id is"<<sock_fd<<endl;
