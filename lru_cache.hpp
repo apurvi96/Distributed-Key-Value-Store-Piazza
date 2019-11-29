@@ -83,12 +83,12 @@ class LRUCache{
       this->capacity = capacity;
       size = 0;
         pageList = new DoublyLinkedList();
-        pageMap = map<int, Node*>();
+        pageMap = map<string, Node*>();
     }
 
-    int get(string key) {
+    string get(string key) {
         if(pageMap.find(key)==pageMap.end()) {
-          return -1;
+          return "Not present";
         }
         string val = pageMap[key]->value;
 
@@ -111,7 +111,7 @@ class LRUCache{
 
         if(size == capacity) {
           // remove rear page
-          int k = pageList->get_rear_page()->key;
+          string k = pageList->get_rear_page()->key;
           pageMap.erase(k);
           pageList->remove_rear_page();
           size--;
@@ -127,7 +127,7 @@ class LRUCache{
      void delete_from_lru(string key) 
     {
         if(pageMap.find(key)==pageMap.end()) {
-          return -1;
+          return ;
         }
 
           pageMap.erase(key); 
@@ -140,7 +140,7 @@ class LRUCache{
 
       
         if(pageMap.find(key)==pageMap.end()) {
-          return -1;
+          return ;
         }
 
         pageMap[key]->value=value;
@@ -149,7 +149,7 @@ class LRUCache{
    }
 
     ~LRUCache() {
-      map<int, Node*>::iterator i1;
+      map<string, Node*>::iterator i1;
       for(i1=pageMap.begin();i1!=pageMap.end();i1++) {
           delete i1->second;
       }
@@ -159,3 +159,9 @@ class LRUCache{
 
     }
 };
+
+
+int main()
+{
+  return 0;
+}
