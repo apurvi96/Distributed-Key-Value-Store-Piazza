@@ -5,6 +5,8 @@
 #include "rapidjson/stringbuffer.h"
 #include <bits/stdc++.h>
 
+map<string,int>heartbeat_count;
+bool data_migration=false;
 struct thread_struct
 {
 	int sockfd; 
@@ -14,6 +16,11 @@ struct thread_struct
 
 map<string,int> heartbeat_count;
 bool data_migration;
+
+struct heartbeat_struct
+{
+	string ip_cs;
+};
 
 struct heartbeat_struct
 {

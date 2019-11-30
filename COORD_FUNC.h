@@ -14,6 +14,7 @@ using namespace rapidjson;
 
 Document document1;
 
+<<<<<<< HEAD
 
 void new_reg_migration(int sock_fd,string ip_port)
 {
@@ -31,6 +32,8 @@ void new_reg_migration(int sock_fd,string ip_port)
 
 
 
+=======
+>>>>>>> 81b101d4be22439b42588b7b38d3d77bdec55a37
 //------------------------------------------------------------------------------------------------------------------------
 
 int connect_without_bind(int sock_id,string ip,string port)
@@ -146,7 +149,9 @@ void* heartbeat_func(void* threadargs)
     struct sockaddr_in sockaddr_struct;
     int len = sizeof(sockaddr_struct);
 
+
     if((connectfd = socket(AF_INET, SOCK_DGRAM, 0)) == 0)
+
     {
         perror("socket failed");
         exit(EXIT_FAILURE);

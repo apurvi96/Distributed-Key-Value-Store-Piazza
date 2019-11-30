@@ -10,13 +10,10 @@ using namespace std;
 
 /*Used to send either acknowledgemnt(parse_error, key_error, successful put, del, update), or 
 for successful get, use it to send data from SS to CS, or data from CS to Client  
-	req_type - ack, data,heartbeat
+	req_type - ack, data
 	message - client_connected , slave_server_connected, {actual value via get opn}, parse_error, key_error, put_success, 
-<<<<<<< HEAD
-			delete_success, update_success, registration_successful, migration_new_server, ready_for_migration, no_slave_server_active,{ip:port}
-=======
-			delete_success, update_success, registration_successful, migration_new_server, ready_for_migration, no_slave_server_active
->>>>>>> updated json
+	delete_success, update_success, registration_successful, migration_new_server, ready_for_migration, no_slave_server_active,{ip:port},
+	migration_ss_done, new_ss_succ_of_succ_done
 */
 string ack_data_string(string req_type, string message){
 	string ackstr = "{ \"req_type\" : \"" + req_type + "\", \"message\" : \"" + message + "\" }";
@@ -54,7 +51,7 @@ string put_update_CS(string req_type, string key, string value){
 
 
 /*handle migration - inform the leader slave server to proceed with migration
-	role - leader,new_SS_leader
+	role - leader,new_ss_leader, new_ss_pre,new_ss_succ,new_ss_succ_of_succ
 	pre_ip , succ_ip , succ_of_succ_ip- ip:ports of these 3
 */
 string inform_leader_migration(string role, string pre_ip, string succ_ip, string s_of_succ_ip){

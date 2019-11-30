@@ -95,7 +95,6 @@ int main(int argc,char **argv)
 
     // pthread for timer
 
-	
 	pthread_create(&time_thread,NULL,timer,NULL);
 
 	int sock_fd=initialize_socket(ip,port);
