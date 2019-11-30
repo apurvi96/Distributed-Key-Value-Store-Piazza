@@ -123,7 +123,7 @@ int main(int argc,char **argv)
 	    getline(file, cs_port); 
 	    file.close();
 	}
-
+    cout<<" cs ip "<<cs_ip<<" port"<<cs_port<<endl;
     connect_f(sock_fd,cs_ip,cs_port);
 	cout<<receive_message(sock_fd)<<endl;
     cout<<"connected in client"<<endl;
@@ -136,6 +136,7 @@ int main(int argc,char **argv)
     {
 
      string command;
+     cout<<"command >> ";
      cin>>command;
 
      char *command_char=(char*)command.c_str();
