@@ -67,9 +67,48 @@ int main(int argc,char **argv)
 
 	connect_f(sock_fd,s_ip,s_port);
 
-	send_message(sock_fd,put_update_SS("put","bb","22","own"));
+	send_message(sock_fd,get_delete_SS("get","bb","own"));
 	recv_msg=receive_message(sock_fd);
 	cout<<"json received "<<recv_msg<<endl;
 	
 	close(sock_fd);
+
+
+	//////////////////////////////////////////////////////////////delete
+
+	sleep(10);
+
+	sock_fd=initialize_socket(ip_address,port_number);
+
+	cout<<"soket id is"<<sock_fd<<endl;
+
+	s_ip="127.0.0.1";
+	s_port="6550";
+
+	connect_f(sock_fd,s_ip,s_port);
+
+	send_message(sock_fd,get_delete_SS("delete","a1a","own"));
+	recv_msg=receive_message(sock_fd);
+	cout<<"json received "<<recv_msg<<endl;
+	
+	close(sock_fd);
+
+	////////////////////////////////////////////////////////////update
+	sleep(10);
+
+	sock_fd=initialize_socket(ip_address,port_number);
+
+	cout<<"soket id is"<<sock_fd<<endl;
+
+	s_ip="127.0.0.1";
+	s_port="6550";
+
+	connect_f(sock_fd,s_ip,s_port);
+
+	send_message(sock_fd,put_update_SS("update","bb","new22","own"));
+	recv_msg=receive_message(sock_fd);
+	cout<<"json received "<<recv_msg<<endl;
+	
+	close(sock_fd);
+	
 }

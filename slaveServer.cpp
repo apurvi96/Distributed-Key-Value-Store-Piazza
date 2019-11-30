@@ -388,9 +388,52 @@ void handle_new_ss_leader(string new_ss_ip,string new_ss_port,string mig_from_cs
 
 }
 
-void handle_new_ss_succ(string jsonFromSS)
+void update_new_ss_own(int llimit, int ulimit){
+	prevmap.clear();
+	for(auto x:ownmap){
+		int hashed_key=consistent_hash(x.first);
+		if(llimit<=hashed_key && hashed_key<ulimit){
+			prevmap[x.first]=x.second;//have put value from ownmap to its prevmap
+			ownmap.erase(x.first);
+		}
+	}
+}
+
+void handle_new_ss_succ(string jsonFromSS, string ip_address,string port_number)
 {
-	
+	char *succ_of_succ_ip1, *succ_of_succ_port1;
+
+	//For consistent hashing, get pre_ip:port, succ_of_succ_ip:port, and to connect to succ_of_succ, get the ip and port of succ_of_succ separately
+
+	assert(doc.HasMember("pre_ip"));
+	assert(doc.HasMember("succ_ip"));
+	assert(doc.HasMember("succ_of_succ_ip"));
+
+	assert(doc["pre_ip"].IsString());
+	assert(doc["succ_ip"].IsString());
+	assert(doc["succ_of_succ_ip"].IsString());
+
+	string pre_ipport, new_ss_ipport, succ_of_succ_ipport, succ_of_succ_ipport1;
+	pre_ipport=doc["pre_ip"].GetString();//has ip:port of predeceesor
+	new_ss_ipport=doc["succ_ip"].GetString();
+	succ_of_succ_ipport=doc["succ_of_succ_ip"].GetString();
+
+	succ_of_succ_ipport1=succ_of_succ_ipport;
+
+	succ_of_succ_ip1=strtok((char*)succ_of_succ_ipport1.c_str(),":");
+	succ_of_succ_port1=strtok(NULL,":");
+	cout<<"ip ports being fetched: "<<succ_of_succ_ip1<<" "<<succ_of_succ_port1<<endl;
+
+
+	int lower_limit=consistent_hash(pre_ipport);
+	int upper_limit=consistent_hash(new_ss_ipport);
+	update_new_ss_own(lower_limit, upper_limit);
+	int fd=new_ss_connect(ip_address, port_number, succ_of_succ_ip1, succ_of_succ_port1, "new_ss_succ_of_succ", "","","");
+	receive_message(fd);//receives ack here other slave server
+	send_table(fd, "own");
+	receive_message(fd); //TODO: check..needed?
+	close(fd);
+
 }
 //-----------------------------------heartbeat thread for SS----------------------------------------------------------------------------
 void *heartbeat_conn(void *ptr){
@@ -464,17 +507,7 @@ void *heartbeat_conn(void *ptr){
 				send_message(fd,ack_data_string("ack","migration_ss_done"));
 			}
 
-			
-
-
-
-
 	}
-
-
-
-
-
 	close(fd);
 
 	while(1)
@@ -599,7 +632,15 @@ void *serve_request(void *ptr)
 
 		else if(role=="new_ss_succ")
 		{
-			handle_new_ss_succ(jsonFromCS);
+			handle_new_ss_succ(jsonFromCS,ip_address,port_number);
+			send_table(client_fd, "prev");
+		}
+
+		else if(role=="new_ss_succ_of_succ")
+		{
+			send_message(client_fd, send_message_ready("ready_for_table"));
+			receive_table(client_fd, "prev");
+			send_message(client_fd, ack_data_string("ack", "new_ss_succ_of_succ_done"));
 		}
 
 		else{

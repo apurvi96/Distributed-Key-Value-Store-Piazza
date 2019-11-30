@@ -13,7 +13,7 @@ for successful get, use it to send data from SS to CS, or data from CS to Client
 	req_type - ack, data
 	message - client_connected , slave_server_connected, {actual value via get opn}, parse_error, key_error, put_success, 
 	delete_success, update_success, registration_successful, migration_new_server, ready_for_migration, no_slave_server_active,{ip:port},
-	migration_ss_done
+	migration_ss_done, new_ss_succ_of_succ_done
 */
 string ack_data_string(string req_type, string message){
 	string ackstr = "{ \"req_type\" : \"" + req_type + "\", \"message\" : \"" + message + "\" }";
