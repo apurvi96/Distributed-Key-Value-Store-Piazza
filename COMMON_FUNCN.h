@@ -126,7 +126,7 @@ int initialize_socket_without_bind()
 }
 void connect_f(int sock_fd, string ip,string port)
 {
-
+	//ip and ports are of the server you want to connect to
 	//converting port  to int
 	int port1=stoi(port);
 	//cout<<"connect port is "<<port1<<endl;

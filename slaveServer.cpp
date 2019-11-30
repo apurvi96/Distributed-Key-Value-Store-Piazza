@@ -318,6 +318,8 @@ void handle_leader(string ss_ip,string ss_port,int coord_fd)
 	char *pre_ip1, *pre_port1, *succ_of_succ_ip1, *succ_of_succ_port1;
 	fetch_ip_ports(pre_ip1, pre_port1, succ_of_succ_ip1,succ_of_succ_port1);
 	cout<<"ip ports recvd: "<<pre_ip1<<" "<<pre_port1<<" "<<succ_of_succ_ip1<<" "<<succ_of_succ_port1<<endl;
+
+	//updating own table of leader(leader is the successor of the slave server that went down) using its prev table
 	update_own();
 	int sock_fd;
 	sock_fd=connect_pre(ss_ip,ss_port,pre_ip1,pre_port1,"pre","own");
@@ -461,12 +463,13 @@ void *heartbeat_conn(void *ptr){
 	//Connecting to CS
 	connect_f(fd, cs_ip, cs_port);
 
-	string x=receive_message(fd);
+	string x=receive_message(fd);//msg received: ack + connected
 	cout<<"recvd ack: "<<x<<endl;
 
 	send_message(fd, identity_string("slave_server"));
 
-	string recv_msg=receive_message(fd);
+	string recv_msg=receive_message(fd);//1. msg received: ack + registration_successful (case for 1st server/single server)
+										//2. msg received: ack + migration_new_server
 
 	//parse receive msg
 
@@ -511,7 +514,7 @@ void *heartbeat_conn(void *ptr){
 
 	while(1)
 	{
-		//make udp connection to cs
+		//make udp connection to cs for heartbeat
 		int udp_fd;
 		struct sockaddr_in servaddr;
 
@@ -570,7 +573,7 @@ void *serve_request(void *ptr)
 	{
 		string jsonFromCS, role;
 
-		jsonFromCS=receive_message(client_fd);
+		jsonFromCS=receive_message(client_fd);//msg recvd: {role} + ip:ports of pre, succ(self), succ_of_succ
 		if(doc.ParseInsitu((char*)jsonFromCS.c_str()).HasParseError()){
 			cout << "Error while parsing the json string recvd from CS (for finding role). Try again" << endl;
 			send_message(client_fd, ack_data_string("ack", "parse_error"));
