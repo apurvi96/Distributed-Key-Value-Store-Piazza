@@ -9,7 +9,7 @@
 
 using namespace rapidjson;
 
-Document doc;
+Document doc,doc1,doc2;
 
 using namespace std;
 
@@ -204,16 +204,16 @@ string handle_delete(string jsonFromCS)
 void fetch_ip_ports(char* pre_ip1, char* pre_port1, char* succ_of_succ_ip1, char* succ_of_succ_port1){
 	assert(doc.HasMember("pre_ip"));
 	// assert(doc.HasMember("succ_ip"));
-	assert(doc.HasMember("succ_of_succ"));
+	assert(doc.HasMember("succ_of_succ_ip"));
 
 	assert(doc["pre_ip"].IsString());
 	// assert(doc["succ_ip"].IsString());
-	assert(doc["succ_of_succ"].IsString());
+	assert(doc["succ_of_succ_ip"].IsString());
 
 	string pre_ipport, succ_ipport, succ_of_succ_ipport;
 	pre_ipport=doc["pre_ip"].GetString();//has ip:port of predeceesor
 	// succ_ip_ipport=doc["succ_ip"].GetString();
-	succ_of_succ_ipport=doc["succ_of_succ"].GetString();
+	succ_of_succ_ipport=doc["succ_of_succ_ip"].GetString();
 
 	// char* pre_ip1, pre_port1, succ_of_succ_ip1,succ_of_succ_port1;
 	pre_ip1=strtok((char*)pre_ipport.c_str(),":");
@@ -290,16 +290,16 @@ void receive_table(int sockfd, string table){// 1.leader will receive pred's own
         kv.push_back(keyval);
     }
 
-  //   if(table=="own"){
-  //   	ownmap.clear();
-  //   	for(int i=0;i<kv.size();i++){
-		// 	char* s=kv[i];
-		// 	string key=strtok(s,":");
-		// 	string val=strtok(NULL,":");
-		// 	cout<<"key: "<<key<<" val: "<<val<<endl;
-		// 	ownmap[key]=val;
-		// }
-  //   }
+    if(table=="own"){
+    	ownmap.clear();
+    	for(int i=0;i<kv.size();i++){
+			char* s=kv[i];
+			string key=strtok(s,":");
+			string val=strtok(NULL,":");
+			cout<<"key: "<<key<<" val: "<<val<<endl;
+			ownmap[key]=val;
+		}
+    }
     if(table=="prev"){
     	prevmap.clear();
     	for(int i=0;i<kv.size();i++){
@@ -330,7 +330,68 @@ void handle_leader(string ss_ip,string ss_port,int coord_fd)
 	send_message(coord_fd,send_message_ready("migration_completed"));
 	close(sock_fd);
 }
+//-----------------------functions to handle new register migration---------------------------------------------------------------
+void new_ss_fetch_ip_ports(char* pre_ip1, char* pre_port1,char* succ_ip1, char* succ_port1, char* succ_of_succ_ip1, char* succ_of_succ_port1){
+	assert(doc.HasMember("pre_ip"));
+	assert(doc.HasMember("succ_ip"));
+	assert(doc.HasMember("succ_of_succ_ip"));
 
+	assert(doc["pre_ip"].IsString());
+	assert(doc["succ_ip"].IsString());
+	assert(doc["succ_of_succ_ip"].IsString());
+
+	string pre_ipport, succ_ipport, succ_of_succ_ipport;
+	pre_ipport=doc["pre_ip"].GetString();//has ip:port of predeceesor
+	succ_ipport=doc["succ_ip"].GetString();
+	succ_of_succ_ipport=doc["succ_of_succ_ip"].GetString();
+
+	// char* pre_ip1, pre_port1, succ_of_succ_ip1,succ_of_succ_port1;
+
+	pre_ip1=strtok((char*)pre_ipport.c_str(),":");
+	pre_port1=strtok(NULL,":");
+	succ_ip1=strtok((char*)succ_ipport.c_str(),":");
+	succ_port1=strtok(NULL,":");
+	
+	succ_of_succ_ip1=strtok((char*)succ_of_succ_ipport.c_str(),":");
+	succ_of_succ_port1=strtok(NULL,":");
+	cout<<"ip ports being fetched: "<<pre_ip1<<" "<<pre_port1<<" "<<succ_of_succ_ip1<<" "<<succ_of_succ_port1<<endl;
+
+}
+//------------------------------------------------------------------------------------------------------------------
+
+int new_ss_connect(string ss_ip,string ss_port,string succ_ip,string succ_port,string role,string pre_ip_to_send,string ss_ip_to_send,string succ_of_succ_ip_to_send)
+{
+	int sock_fd=initialize_socket(ss_ip,ss_port);
+	connect_f(sock_fd,succ_ip,succ_port);
+	send_message(sock_fd,inform_leader_migration(role,pre_ip_to_send,ss_ip_to_send,succ_of_succ_ip_to_send));
+	return sock_fd;
+}
+
+void handle_new_ss_leader(string new_ss_ip,string new_ss_port,string mig_from_cs)
+{
+	char *pre_ip1, *pre_port1,*succ_ip1, *succ_port1, *succ_of_succ_ip1, *succ_of_succ_port1;
+	new_ss_fetch_ip_ports(pre_ip1, pre_port1,succ_ip1,succ_port1,succ_of_succ_ip1,succ_of_succ_port1);
+	cout<<"ip ports recvd: "<<pre_ip1<<" "<<pre_port1<<" "<<succ_ip1<<" "<<succ_port1<<" "<<succ_of_succ_ip1<<" "<<succ_of_succ_port1<<endl;
+
+	int sockfd;
+	//new slave server connects to its succ to get succ's prev into its own.
+	string pre_ip_to_send=string(pre_ip1)+":"+string(pre_port1);
+	string ss_ip_to_send=new_ss_ip+":"+new_ss_port;
+	string succ_of_succ_ip_to_send=string(succ_of_succ_ip1)+":"+string(succ_of_succ_port1);
+	sockfd=new_ss_connect(new_ss_ip,new_ss_port,succ_ip1,succ_port1,"new_ss_succ",pre_ip_to_send,ss_ip_to_send,succ_of_succ_ip_to_send);
+	receive_table(sockfd,"own");
+
+	//new slave server connects to its pre to get pre's own into its prev
+	sockfd=new_ss_connect(new_ss_ip,new_ss_port,pre_ip1,pre_port1,"new_ss_pre","","","");
+	receive_table(sockfd,"prev");
+
+
+}
+
+void handle_new_ss_succ(string jsonFromSS)
+{
+	
+}
 //-----------------------------------heartbeat thread for SS----------------------------------------------------------------------------
 void *heartbeat_conn(void *ptr){
 	string ack;
@@ -361,8 +422,93 @@ void *heartbeat_conn(void *ptr){
 	cout<<"recvd ack: "<<x<<endl;
 
 	send_message(fd, identity_string("slave_server"));
-	receive_message(fd);
-	//TODO: complete heartbeat functionality
+
+	string recv_msg=receive_message(fd);
+
+	//parse receive msg
+
+	if(doc1.ParseInsitu((char*)recv_msg.c_str()).HasParseError()){
+			cout << "Error while parsing the json string recvd from CS (for finding message). Try again" << endl;
+			send_message(fd, ack_data_string("ack", "parse_error"));
+			pthread_exit(NULL);
+	}
+
+	assert(doc1.IsObject());
+	assert(doc1.HasMember("message")); //checks if doc has member named "role"
+	assert(doc1["message"].IsString());
+	
+	string message=doc1["message"].GetString();
+
+	if(message=="migration_new_server")
+	{
+			send_message(fd, ack_data_string("ack","ready_for_migration"));
+
+			string mig_from_cs=receive_message(fd);
+
+			//extract role
+			if(doc2.ParseInsitu((char*)mig_from_cs.c_str()).HasParseError()){
+				cout << "Error while parsing the json string recvd from CS (for finding role). Try again" << endl;
+				send_message(fd, ack_data_string("ack", "parse_error"));
+				pthread_exit(NULL);
+			}
+
+			assert(doc2.IsObject());
+			assert(doc2.HasMember("role")); //checks if doc has member named "role"
+			assert(doc2["role"].IsString());
+			string role=doc2["role"].GetString();
+
+			//Newly registered Slave Server is the new_ss_leader
+			if(role=="new_ss_leader")
+			{
+				handle_new_ss_leader(ss_ip,ss_port,mig_from_cs);
+				send_message(fd,ack_data_string("ack","migration_ss_done"));
+			}
+
+			
+
+
+
+
+	}
+
+
+
+
+
+	close(fd);
+
+	while(1)
+	{
+		//make udp connection to cs
+		int udp_fd;
+		struct sockaddr_in servaddr;
+
+		//make structure
+		memset(&servaddr, '\0', sizeof(servaddr));
+
+		servaddr.sin_addr.s_addr = inet_addr(cs_ip.c_str()); 
+	    servaddr.sin_port = htons(UDP_PORT); 
+	    servaddr.sin_family = AF_INET;  
+
+	    // create datagram socket 
+	    udp_fd = socket(AF_INET, SOCK_DGRAM, 0); 
+	      
+	    // connect to server 
+	    if(connect(udp_fd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) 
+	    { 
+	        printf("\n Error : Connect Failed \n"); 
+	        exit(0); 
+	    } 
+
+	    //send udp message
+	    string to_send=ss_ip+":"+ss_port;
+	    send_message(udp_fd,ack_data_string("heartbeat",to_send));
+
+	    sleep(4);
+
+	}
+
+	
 	
 
 }
@@ -437,14 +583,25 @@ void *serve_request(void *ptr)
 
 		}
 		else if(role=="succ_of_succ"){
-			send_message(client_fd,send_message_ready(“ready_for_table”));
+			send_message(client_fd,send_message_ready("ready_for_table"));
 			assert(doc.HasMember("table")); //checks if doc has member named "table"
 			assert(doc["table"].IsString());
 			string table1=doc["table"].GetString();
 			
-			receive_table(client_fd,table);
+			receive_table(client_fd,table1);
 
 		}
+
+		else if(role=="new_ss_pre")
+		{
+			send_table(client_fd,"own");
+		}
+
+		else if(role=="new_ss_succ")
+		{
+			handle_new_ss_succ(jsonFromCS);
+		}
+
 		else{
 			cout<<"Wrong input sent to SS by CS. Try again!"<<endl;
 		}
