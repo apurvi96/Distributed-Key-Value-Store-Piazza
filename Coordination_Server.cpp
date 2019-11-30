@@ -49,8 +49,18 @@ void* serve_requests(void* threadargs)
     {
        cout<<"in slave server"<<endl;
        assert(document.IsObject());
-       register_slave_server(ip_port);
-       send_message(connectfd,ack_data_string("ack","registration_successful"));
+       if(root == NULL)
+       {
+       		register_slave_server(ip_port);
+       }
+       else
+       {
+       		data_migration=true;
+       		new_reg_migration(connectfd,ip_port);
+       		data_migration=false;
+       }
+       
+       //send_message(connectfd,ack_data_string("ack","registration_successful"));
        cout<<"registered"<<endl;
 
        //TODO start HEARTBEAT
@@ -73,6 +83,20 @@ int main(int argc,char **argv)
 	cout<<"my ip: "<<ip<<endl;
 	cout<<"my port: "<<port<<endl;
 	write_to_file(ip,port);
+
+    // pthread for heartbeat checking
+
+	pthread_t heartbeat_thread;
+	pthread_t time_thread;
+    
+	struct heartbeat_struct* hs=new heartbeat_struct();
+	hs->ip_cs=ip;
+	pthread_create(&heartbeat_thread,NULL,heartbeat_func,(void*)hs);
+
+    // pthread for timer
+
+	
+	pthread_create(&time_thread,NULL,timer,NULL);
 
 	int sock_fd=initialize_socket(ip,port);
 

@@ -8,10 +8,31 @@
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
+#include "GLOBAL_CS.h"
 using namespace std;
 using namespace rapidjson;
 
 Document document1;
+
+
+void new_reg_migration(int sock_fd,string ip_port)
+{
+    int hash_value=consistent_hash(ip_port);
+    avl_tree av;
+    Node *pre,*succ,*pre1,*succ_of_succ; 
+    av.Suc(root,pre,succ,hash_value);
+    av.Suc(root,pre1,succ_of_succ,succ->key);
+    send_message(sock_fd,ack_data_string("ack","migration_new_server"));
+    cout<<receive_message(sock_fd)<<endl;
+    av.insert(root,hash_value,ip_port);
+    send_message(sock_fd,inform_leader_migration("new_SS_leader",pre->ip_plus_port,succ->ip_plus_port, succ_of_succ->ip_plus_port));
+    cout<<receive_message(sock_fd)<<endl;
+}
+
+
+
+//------------------------------------------------------------------------------------------------------------------------
+
 int connect_without_bind(int sock_id,string ip,string port)
 {
 
@@ -51,6 +72,123 @@ int connect_without_bind(int sock_id,string ip,string port)
 
 
 
+//---------------------------------------------------------------------------------------------------------------
+
+
+void* timer(void* threadargs)
+{  
+
+  // TODO checking for one and two slave server remaining in the circle	
+  while(1)
+  {	
+   sleep(30);
+   for(auto it=heartbeat_count.begin();it!=heartbeat_count.end();it++)
+   {
+
+   	  if(it->second==0)
+   	  {
+   	  	data_migration=true;
+   	  	int hash_key;
+   	  	hash_key=consistent_hash(it->first);
+        avl_tree av;
+        Node *pre,*succ,*succ_of_succ,*pre1;
+        av.Suc(root,pre,succ,hash_key); 
+        av.Suc(root,pre1,succ_of_succ,succ->key);
+        root=av.deleteNode(root,hash_key);
+        //erasing slave  from map table
+        heartbeat_count.erase(it->first);
+
+        char ar[1024];
+        strcpy(ar,(char*)(succ->ip_plus_port).c_str());
+        char *ip_address=strtok(ar,":");
+        char *port_number=strtok(NULL,":");        
+        int sock_fd=initialize_socket(ip_address,port_number);
+        connect_without_bind(sock_fd,"abc","pqr");
+
+        string pre_ip,succ_ip,succ_of_succ_ip;
+        succ_ip=ip_address;
+
+        strcpy(ar,(pre->ip_plus_port).c_str());
+        ip_address=strtok(ar,":");
+        port_number=strtok(NULL,":");
+        pre_ip=ip_address;
+
+        strcpy(ar,(succ_of_succ->ip_plus_port).c_str());
+        ip_address=strtok(ar,":");
+        port_number=strtok(NULL,":");
+        succ_of_succ_ip=ip_address;
+
+        send_message(sock_fd,inform_leader_migration("leader",pre->ip_plus_port,succ->ip_plus_port,succ_of_succ->ip_plus_port));
+        cout<<receive_message(sock_fd);
+        
+
+   	  }
+   	  data_migration=false;
+
+   }
+  }  
+  
+
+
+}
+
+
+//------------------------------------------------------------------------------------------------------------------
+
+
+
+void* heartbeat_func(void* threadargs)
+{
+    int port_num=UDP_PORT;
+    const char* ip_num=(((struct heartbeat_struct*)threadargs)->ip_cs).c_str();
+
+    int connectfd;
+    struct sockaddr_in sockaddr_struct;
+    int len = sizeof(sockaddr_struct);
+
+    if((connectfd = socket(AF_INET, SOCK_DGRAM, 0)) == 0)
+    {
+        perror("socket failed");
+        exit(EXIT_FAILURE);
+    }
+    
+   // struct sockaddr_in ip_server;
+    sockaddr_struct.sin_family = AF_INET;
+    sockaddr_struct.sin_addr.s_addr =htonl(INADDR_ANY);
+    sockaddr_struct.sin_port=htons(port_num);
+
+    if(bind(connectfd, (struct sockaddr*)&sockaddr_struct, sizeof(sockaddr_struct)) < 0)
+    {
+        perror("Bind failed in UDP");
+        exit(EXIT_FAILURE);
+    }
+
+    string receive_val;
+    while(1)
+    {
+        receive_val=receive_message(connectfd);
+        if(document1.ParseInsitu((char*)receive_val.c_str()).HasParseError())
+        {
+            cout<<"error in request for client parsing string"<<endl;
+        }
+        
+        else if(strcmp(document1["req_type"].GetString(),"data")==0)
+        { 
+            assert(document1.IsObject());
+            assert(document1.HasMember("req_type"));
+            assert(document1.HasMember("message"));
+
+            string ip_port=document1["message"].GetString();
+            heartbeat_count[ip_port]++;
+        }
+
+    }
+}
+
+
+
+//------------------------------------------------------------------------------------------------------------------
+
 // write ip port to file for slave servers and clients to access
 void write_to_file(string ip, string port)
 {
@@ -59,6 +197,8 @@ void write_to_file(string ip, string port)
 	fo << ip +"\n" + port;
 	fo.close();
 }
+
+//------------------------------------------------------------------------------------------------------------------
 
 void register_slave_server(string ip_port)
 {
@@ -69,7 +209,12 @@ void register_slave_server(string ip_port)
 	av.inorder(root);
 }
 
+
+//---------------------------------------------------------------------------------------------------------------------
+
 //connect to slave server for getting key and putting key:
+
+
 
 int connect_to_the_slave(string ip,string port,string cs_ip,string cs_port)
 {
@@ -79,12 +224,15 @@ int connect_to_the_slave(string ip,string port,string cs_ip,string cs_port)
     //cout<<"sock fd for cs and slave for get and put key "<<sock_fd<<endl;
     cout<<"ip port while connecting slave "<<ip<<" "<<port<<endl;
     int  sock_fd=connect_without_bind(sock_fd,ip,port);
-    int n= connect_f(sock_fd,ip,port);
-    if(n<0) 
-        return -1;
+    // int n= connect_f(sock_fd,ip,port);
+    // if(n<0) 
+    //     return -1;
     return sock_fd;
 
 }
+
+
+//------------------------------------------------------------------------------------------------------------//
 
 // taking value from the respective slave server 
 string get_from_slave(char *ip_address,char *port_number,string cs_ip,string cs_port,string key,string table)
@@ -105,6 +253,7 @@ string get_from_slave(char *ip_address,char *port_number,string cs_ip,string cs_
   
 }
 
+//-----------------------------------------------------------------------------------------------------------------//
 
 void put_on_slave(int sock_fd,char *ip_address,char *port_number,string cs_ip,string cs_port,string key,string value,string table)
 {   string ip=ip_address;
@@ -121,6 +270,8 @@ void put_on_slave(int sock_fd,char *ip_address,char *port_number,string cs_ip,st
 }
 
 
+//-------------------------------------------------------------------------------------------------------------------------//
+
 string delete_from_slave(int sock_fd,string ip_address,string port_number,string cs_ip,string cs_port,string key,string table)
 {
     string ip=ip_address;
@@ -134,6 +285,8 @@ string delete_from_slave(int sock_fd,string ip_address,string port_number,string
     cout<<"in delete_from_slave -- value received from slave "<<value<<endl;
     return value;
 }
+
+//-------------------------------------------------------------------------------------------------------------------//
 
 void update_on_slave(int sock_fd,char *ip_address,char *port_number,string cs_ip,string cs_port,string key,string value,string table)
 {   string ip=ip_address;
@@ -149,6 +302,8 @@ void update_on_slave(int sock_fd,char *ip_address,char *port_number,string cs_ip
     
 }
 
+
+//----------------------------------------------------------------------------------------------------------------------------//
 
 void serve_get_request(int connectfd,string key,string ip_port_cs)
 {
@@ -224,7 +379,7 @@ void serve_get_request(int connectfd,string key,string ip_port_cs)
 }
 
 
-
+//-------------------------------------------------------------------------------------------------------------------------------------//
 
 void serve_put_request(int connectfd,string key,string value,string ip_port_cs)
 {
@@ -299,6 +454,8 @@ void serve_put_request(int connectfd,string key,string value,string ip_port_cs)
 }
 
 
+//----------------------------------------------------------------------------------------------------------------------------------//
+
 void serve_delete_request(int connectfd,string key,string ip_port_cs)
 {
     char* ip_port_cs_char=(char*)(ip_port_cs).c_str();
@@ -372,7 +529,7 @@ void serve_delete_request(int connectfd,string key,string ip_port_cs)
 
 
 
-
+//********************************************************************************************************************//
 
 
 void serve_update_request(int connectfd,string key,string value,string ip_port_cs)
@@ -461,6 +618,7 @@ void serve_update_request(int connectfd,string key,string value,string ip_port_c
 }
 
 
+//*****************************************************************************************************************************************//
 
 void request_of_client(int connectfd,string ip_port_cs)
 {
@@ -470,8 +628,15 @@ void request_of_client(int connectfd,string ip_port_cs)
         /* TODO Coord mar ra h client k jate hi why why why??? 
             handle when null in avl(succ is largest one) initialise to the minimum
         */
+        
+
         s=receive_message(connectfd);
-        if(document1.ParseInsitu((char*)s.c_str()).HasParseError())
+        
+        // dont do anything if migration;
+        
+         while(data_migration==true);
+
+         if(document1.ParseInsitu((char*)s.c_str()).HasParseError())
         {
         	cout<<"error in request for client parsing string"<<endl;
         	send_message(connectfd,ack_data_string("ack","parse_error"));
@@ -548,5 +713,7 @@ void request_of_client(int connectfd,string ip_port_cs)
 
 
 }
+
+//*************************************end_of_coordination_server***********************************************//
 
 #endif
