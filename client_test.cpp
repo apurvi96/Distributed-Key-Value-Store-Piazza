@@ -1,14 +1,15 @@
 #include<bits/stdc++.h>
+#include "COORD_FUNC.h"
+#include "GLOBAL_CS.h"
 #include "COMMON_FUNCN.h"
+#include "jsonstring.h"
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
-#include "jsonstring.h"
-
-using namespace rapidjson;
 using namespace std;
+using namespace rapidjson;
 
-Document doc;
+Document document1;
 
 int main(int argc,char **argv)
 {
