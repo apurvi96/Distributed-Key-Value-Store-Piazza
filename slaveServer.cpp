@@ -506,7 +506,6 @@ void *heartbeat_conn(void *ptr){
 				handle_new_ss_leader(ss_ip,ss_port,mig_from_cs);
 				send_message(fd,ack_data_string("ack","migration_ss_done"));
 			}
-
 	}
 	close(fd);
 
@@ -642,7 +641,6 @@ void *serve_request(void *ptr)
 			receive_table(client_fd, "prev");
 			send_message(client_fd, ack_data_string("ack", "new_ss_succ_of_succ_done"));
 		}
-
 		else{
 			cout<<"Wrong input sent to SS by CS. Try again!"<<endl;
 		}
