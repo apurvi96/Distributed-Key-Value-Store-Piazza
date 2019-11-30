@@ -14,17 +14,12 @@ struct thread_struct
 	string ip_port_CS;
 };
 
-map<string,int> heartbeat_count;
-bool data_migration;
 
 struct heartbeat_struct
 {
 	string ip_cs;
 };
 
-struct heartbeat_struct
-{
-	string ip_cs;
-};
+
 
 #endif
