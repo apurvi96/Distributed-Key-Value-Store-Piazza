@@ -6,10 +6,11 @@
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
+// #include  "lru_ap.hpp"
 using namespace std;
 using namespace rapidjson;
 
-Document document;
+
 
 
 
@@ -24,9 +25,9 @@ void* serve_requests(void* threadargs)
 	cout<<ack_data_string("ack","connected")<<endl;
 	send_message(connectfd,ack_data_string("ack","connected"));
 	cout<<"sent"<<endl;
-	string check_id=receive_message(connectfd);
+	string check_id=receive_message(connectfd); // message received identity + slave_server/client
 	cout<<check_id<<endl;
-	
+	Document document;
 	// If parsing gives error:
 	if(document.ParseInsitu((char*)check_id.c_str()).HasParseError())
 	{
@@ -40,6 +41,7 @@ void* serve_requests(void* threadargs)
     	assert(document.IsObject());	
        	send_message(connectfd,ack_data_string("ack","ready_to_serve"));
        	request_of_client(connectfd,ip_port_cs);
+       	//pthread_exit(NULL);
     //    assert(document.IsObject());	
 	   // send_message(connectfd,ack_data_string("ack","ready_to_serve"));
     //    request_of_client(connectfd);
@@ -49,12 +51,17 @@ void* serve_requests(void* threadargs)
     {
        cout<<"in slave server"<<endl;
        assert(document.IsObject());
+
+       // when there is only one slave server
        if(root == NULL)
        {
        		register_slave_server(ip_port);
+       		send_message(connectfd,ack_data_string("ack","registration_successful"));	// send message "registration_successful" for first slave server
+
        }
        else
        {
+       		// send message migration_new_server when more than one server in system
        		data_migration=true;
        		new_reg_migration(connectfd,ip_port);
        		data_migration=false;
@@ -63,8 +70,10 @@ void* serve_requests(void* threadargs)
        //send_message(connectfd,ack_data_string("ack","registration_successful"));
        cout<<"registered"<<endl;
 
-       //TODO start HEARTBEAT
+      
 	}
+
+
 
 }
 
@@ -135,7 +144,7 @@ int main(int argc,char **argv)
 		cout<<th->ip_plus_port<<endl;
 		th->ip_port_CS=ip+":"+port;
 		pthread_create(&newThread[i],NULL,serve_requests,(void*)th);
-		pthread_join(newThread[i],NULL);
+		pthread_detach(newThread[i]);
 		//send_message(connectfd,ack_data_string("ack","slave_server_connected"));
 		//cout<<"recvd msg: "<<receive_message(connectfd);
 

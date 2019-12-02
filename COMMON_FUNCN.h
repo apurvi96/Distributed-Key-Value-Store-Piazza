@@ -17,12 +17,44 @@
 using namespace std;
 typedef long long int ll;
 
-#define RING_SIZE 16
+#define RING_SIZE 31
 #define BUFF_SIZE 1024
 #define UDP_PORT 3769
+#define MUL 99999989
 
 
-int consistent_hash(string s, int M=RING_SIZE)
+
+
+int consistent_hash(string s)
+{   
+	int j;
+	int flag;
+    for(j=RING_SIZE; j>=0; j--)
+    {	
+    	flag=1;
+    	for(int i=2; i*i <= j; i++)
+		{
+			if(j % i == 0)
+				flag=0;
+		}
+		if(flag==1)
+			break;
+
+    }
+    j=RING_SIZE;
+    //prime_num(temp);
+    int len=s.length();
+    int hashed_val=0;
+
+    for(int i=0; i<len ;i++)
+    {   hashed_val =(hashed_val+ (s [i]*MUL)%j)%j;
+        //hashed_val = (hashed_val+j)%j;
+
+    }
+    return (hashed_val+j)%j;
+}
+
+/*int consistent_hash(string s, int M=RING_SIZE)
  {
      int intLength = s.length() / 4;
      long sum = 0;
@@ -45,7 +77,7 @@ int consistent_hash(string s, int M=RING_SIZE)
     cout<<(abs(sum)%M)<<endl; 
      return (abs(sum)%M);
    
-  }
+  }*/
 
 int initialize_socket(string ip,string port)
 {
@@ -135,7 +167,7 @@ void connect_f(int sock_fd, string ip,string port)
 	const char *ip1=ip.c_str();
 	//cout<<"connect ip is"<<ip1<<endl;
 
-
+	cout<<"trying to connect "<<ip1<<" "<<port1<<endl;
 	//server structure
 	struct sockaddr_in ip_server;
 	ip_server.sin_family=AF_INET;
@@ -150,7 +182,7 @@ void connect_f(int sock_fd, string ip,string port)
 		perror("CANNOT CONNECT");
 		
 	}
-}
+} 
 
 
 void send_message(int sock_fd, string  msg)

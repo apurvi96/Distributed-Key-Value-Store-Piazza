@@ -39,44 +39,53 @@ Node* minValue(Node* node) {
 
 
 //will give succ as well as pre
-void Suc(Node* root, Node*& pre, Node*& suc, int key) 
+void Suc(Node* root1, Node*& pre, Node*& suc, int key) 
 { 
-   
-    if (root == NULL)  return ; 
-    if (root->key == key) 
+     
+    if (root1 == NULL)  return ; 
+
+    if (root1->key == key) 
     { 
-        if (root->left != NULL) 
+        if (root1->left != NULL) 
         { 
-            Node* tmp = root->left; 
+            Node* tmp = root1->left; 
             while (tmp->right) 
                 tmp = tmp->right; 
             pre = tmp ; 
         }  
-        if (root->right != NULL) 
+        if (root1->right != NULL) 
         { 
-            Node* tmp = root->right ; 
+            Node* tmp = root1->right ; 
             while (tmp->left) 
                 tmp = tmp->left ; 
             suc = tmp ; 
         } 
 
-        if(root->left==NULL && root->right==NULL)
-        {
-            suc=root;
-        }
+        // if(root->left==NULL && root->right==NULL)
+        // {
+        //     suc=root;
+        //     pre=root;
+        // }
         return  ; 
     } 
    
-    if (root->key > key) 
+    if (root1->key > key) 
     { 
-        suc = root ; 
-        Suc(root->left, pre, suc, key) ; 
+        suc = root1 ; 
+        Suc(root1->left, pre, suc, key) ; 
+        
     } 
     else 
     { 
-        pre = root ; 
-        Suc(root->right, pre, suc, key) ; 
+        pre = root1 ; 
+        Suc(root1->right, pre, suc, key) ;
+         
     } 
+    if(pre!=NULL)
+        cout<<"pre is "<<pre->key<<" "<<endl;
+    if(suc!=NULL)
+        cout<<"suc is "<<suc->key<<" "<<endl;
+    cout<<endl;
 } 
 
 
@@ -132,48 +141,51 @@ Node *minValueNode(Node *node)
 
     return current;
 }
-Node *deleteNode(Node *root, int key)
+Node *deleteNode(Node *root1, int key)
 {
-    if (root == NULL)
-        return root;
-    if (key < root->key)
-        root->left = deleteNode(root->left, key);
-    else if (key > root->key)
-        root->right = deleteNode(root->right, key);
+    if (root1 == NULL)
+        return root1;
+    if (key < root1->key)
+        root1->left = deleteNode(root1->left, key);
+    else if (key > root1->key)
+        root1->right = deleteNode(root1->right, key);
     else
     {
-        if (root->left == NULL)
+        if (root1->left == NULL)
         {
-            Node *temp = root->right;
-            free(root);
+            Node *temp = root1->right;
+            free(root1);
             return temp;
         }
-        else if (root->right == NULL)
+        else if (root1->right == NULL)
         {
-            Node *temp = root->left;
-            free(root);
+            Node *temp = root1->left;
+            free(root1);
             return temp;
         }
-        Node *temp = minValueNode(root->right);
-        root->key = temp->key;
-        root->right = deleteNode(root->right, temp->key);
+        Node *temp = minValueNode(root1->right);
+        root1->key = temp->key;
+        root1->ip_plus_port=temp->ip_plus_port;
+        root1->right = deleteNode(root1->right, temp->key);
     }
-    return root;
+    if(root1!=NULL)
+    cout<<"root1 data in avl "<<root1->key<<endl;
+    return root1;
 }
 
 
 
-void inorder(Node *root)
+void  preorder(Node *root1)
 {
-    if(root==NULL){
-        cout<<"root null"<<endl;
+    if(root1==NULL){
+        cout<<"root->null"<<endl;
         return;
     }
     else{
-
-        inorder(root->left);
-        cout << root->key << "/" << root->ip_plus_port << ", ";
-        inorder(root->right);
+         cout << root1->key << "->" << root1->ip_plus_port << "|";
+        preorder(root1->left);
+        
+        preorder(root1->right);
    
  }
 }

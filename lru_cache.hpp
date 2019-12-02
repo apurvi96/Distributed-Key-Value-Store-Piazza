@@ -1,167 +1,244 @@
-#include <iostream>
-#include <map>
+#ifndef lru_cache
+#define lru_cache
+#include<iostream>
+#include<string>
+#include<algorithm>
+#include<unordered_map>
+
 using namespace std;
-class Node {
-  public:
-  string key, value;
-  Node *prev, *next;
-  Node(string k, string v): key(k), value(v), prev(NULL), next(NULL) {}
-};
+typedef long long int ll;
 
-class DoublyLinkedList {
-  Node *front, *rear;
-  
-  bool isEmpty() {
-      return rear == NULL;
-  }
-
-  public:
-  DoublyLinkedList(): front(NULL), rear(NULL) {}
-  
-  Node* add_page_to_head(string key, string value) {
-      Node *page = new Node(key, value);
-      if(!front && !rear) {
-          front = rear = page;
-      }
-      else {
-          page->next = front;
-          front->prev = page;
-          front = page;
-      }
-      return page;
-  }
-
-  void move_page_to_head(Node *page) {
-      if(page==front) {
-          return;
-      }
-      if(page == rear) {
-          rear = rear->prev;
-          rear->next = NULL;
-      }
-      else {
-          page->prev->next = page->next;
-          page->next->prev = page->prev;
-      }
-
-      page->next = front;
-      page->prev = NULL;
-      front->prev = page;
-      front = page;
-  }
-
-  void remove_rear_page() {
-      if(isEmpty()) {
-          return;
-      }
-      if(front == rear) {
-          delete rear;
-          front = rear = NULL;
-      }
-      else {
-          Node *temp = rear;
-          rear = rear->prev;
-          rear->next = NULL;
-          delete temp;
-      }
-  }
-  Node* get_rear_page() {
-      return rear;
-  }
-  
-};
-
-
-
-class LRUCache{
-  int capacity, size;
-  DoublyLinkedList *pageList;
-  map<string, Node*> pageMap;
-
-  public:
-    LRUCache(int capacity) {
-      this->capacity = capacity;
-      size = 0;
-        pageList = new DoublyLinkedList();
-        pageMap = map<string, Node*>();
-    }
-
-    string get(string key) {
-        if(pageMap.find(key)==pageMap.end()) {
-          return "Not present";
-        }
-        string val = pageMap[key]->value;
-
-        // move the page to front
-        pageList->move_page_to_head(pageMap[key]);
-        return val;
-    }
-
-
-
-    void put(string key, string value) {
-      if(pageMap.find(key)!=pageMap.end()) {
-          // if key already present, update value and move page to head
-          pageMap[key]->value = value;
-          pageList->move_page_to_head(pageMap[key]);
-          return;
-      }
-       
-
-
-        if(size == capacity) {
-          // remove rear page
-          string k = pageList->get_rear_page()->key;
-          pageMap.erase(k);
-          pageList->remove_rear_page();
-          size--;
-        }
-
-        // add new page to head to Queue
-        Node *page = pageList->add_page_to_head(key, value);
-        size++;
-        pageMap[key] = page;
-    }
-
-
-     void delete_from_lru(string key) 
-    {
-        if(pageMap.find(key)==pageMap.end()) {
-          return ;
-        }
-
-          pageMap.erase(key); 
-        
-    }
-  
-
-   void update_in_lru(string key, string value) 
-   {
-
-      
-        if(pageMap.find(key)==pageMap.end()) {
-          return ;
-        }
-
-        pageMap[key]->value=value;
-        pageList->move_page_to_head(pageMap[key]);
-
-   }
-
-    ~LRUCache() {
-      map<string, Node*>::iterator i1;
-      for(i1=pageMap.begin();i1!=pageMap.end();i1++) {
-          delete i1->second;
-      }
-
-      delete pageList;
-
-
-    }
-};
-
-
-int main()
+class node
 {
-  return 0;
-}
+public:
+	string key;
+	string value;
+	node *prev;
+	node *next;
+
+	node(string k, string v)
+	{
+		key=k;
+		value=v;
+		prev=NULL;
+		next=NULL;
+	}
+};
+
+
+class lrucache
+{
+public:
+   	int capacity;//total size of the cache
+   	int count=0;//no. of elements currently in the cache
+	node *front,*rear;
+	unordered_map<string,node*> mapvalues;
+
+	lrucache()
+	{
+		capacity=0;
+		front=NULL;
+		rear=NULL;
+	}
+
+
+	lrucache(int cap)
+	{
+		capacity=cap;
+		front=NULL;
+		rear=NULL;
+	}
+
+	//print the contents of the cache
+	void display()
+	{
+		node *n1=front;
+		//n1=front;
+		while(n1!=NULL)
+		{
+			cout<<"cache key: "<<n1->key<<", cache value: "<<n1->value<<endl;
+			n1=n1->next;
+		}
+	}
+
+	//delete a node from cache
+	void deletenode(node *n1)
+	{
+		cout<<"count is "<<count<<endl;
+		count--;
+		mapvalues.erase(n1->key);
+		cout<<"erased from map"<<endl;
+		if(n1==NULL)
+			return;
+
+		if(front==rear)
+		{
+			front=NULL;
+			rear=NULL;
+			return;
+		}
+
+		if(rear==n1)
+		{
+			n1->prev->next=NULL;
+			rear=n1->prev;
+			free(n1);
+			return;
+		}
+
+		if(n1 == front)
+		{
+			n1->next->prev=NULL;
+			front=n1->next;
+
+		}
+		else
+		{	
+			n1->prev->next=n1->next;
+			n1->next->prev=n1->prev;
+		}
+		
+		free(n1);
+		cout<<"exiting deletenode"<<endl;
+	}
+
+	//create a node and push it to the front of deque
+	void pushfront(string k,string v)
+	{
+		count++;
+		if(front==NULL)
+		{
+			node *n1=new node(k,v);
+			mapvalues[k]=n1;
+			front=n1;
+			rear=n1;
+			return;
+		}
+		node *n1=new node(k,v);
+		mapvalues[k]=n1;
+		n1->next=front;
+		front->prev=n1;
+		front=n1;
+	}
+
+	//move an existing node to the front of deque(most recently used node <- n1)
+	void movetohead(node *n1)
+	{
+		if(n1==front)
+			return;
+
+		if(rear->prev==NULL)
+		{
+			rear->prev=n1;
+			n1->next=front;
+			n1->prev=NULL;
+			front=n1;
+		}
+
+		if(n1==rear)
+		{
+			rear=n1->prev;
+			n1->prev->next=NULL;
+			n1->next=front;
+			n1->prev=NULL;
+			front->prev=n1;
+			front=n1;
+			return;
+		}
+		n1->next->prev=n1->prev;
+		n1->prev->next=n1->next;
+		n1->next=front;
+		n1->prev=NULL;
+		front->prev=n1;
+		front=n1;
+	}
+
+	void put_in_cache(string k,string v){
+		if(capacity==0)
+		{
+			//cout<<"NO CACHE SPACE\n";
+			return;
+		}
+
+		if(mapvalues.find(k)==mapvalues.end()){//put
+			{
+				if(count<capacity)
+					{
+						pushfront(k,v);
+					}
+
+					else 
+					{
+						deletenode(rear);//delete lru node to make space for new node in cache
+						pushfront(k,v);
+					}
+			}
+		}
+	}
+
+	//call update after 2 phase commit successful
+	void update_in_cache(string k,string v)
+	{
+		if(capacity==0)
+		{
+			//cout<<"NO CACHE SPACE\n";
+			return;
+		}
+		if(mapvalues.find(k)!=mapvalues.end())//update
+		{
+			node *n2=mapvalues[k];
+
+			if(n2->value.compare(v)!=0)
+			{
+				n2->value=v;
+			}
+
+			movetohead(n2);
+			cout<<"updated in cache "<<endl;
+		}
+		
+	}
+
+	string get_from_cache(string k)
+	{
+		if(capacity==0)
+		{
+			//cout<<"NO CACHE SPACE\n";
+			return "-1";
+		}
+		if(mapvalues.find(k)==mapvalues.end())
+		{
+
+		}
+
+		else
+		{
+			node *n1=mapvalues[k];
+			string s=n1->value;
+			movetohead(n1);
+			return s;
+			//No need to contact SS. Directly return value(json format string) to Client
+		}
+	}
+
+	void delete_from_cache(string key)
+	{	
+		cout<<"entered delete_from_cache:"<<endl;
+  
+  		if(mapvalues.find(key)!=mapvalues.end())
+  		{
+	      	cout<<"found key in map "<<key<<endl;
+	      	node *n1=mapvalues[key];
+	      	cout<<"addr is "<<n1<<endl;
+	        deletenode(n1);
+	        cout<<"deleted from cache in delete_from_cache func:"<<endl;
+
+      	} 
+
+	}
+
+};
+
+lrucache cache(4);
+
+#endif
