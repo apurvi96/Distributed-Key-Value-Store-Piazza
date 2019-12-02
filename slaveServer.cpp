@@ -574,8 +574,10 @@ void handle_new_ss_succ(string jsonFromSS, string ip_address,string port_number)
 	}
 	int fd=new_ss_connect(ip_address, port_number, succ_of_succ_ip1, succ_of_succ_port1, "new_ss_succ_of_succ", "","","");
 
+
 	string rmsg=receive_message(fd);//receives ack here other slave server: ready_for_table
 	cout<<"revcd msg after new_ss_connect:"<<rmsg<<endl;
+
 
 	send_table(fd, "own");
 	string rmsg1=receive_message(fd); //recvd msg (from SS): ack+new_ss_succ_of_succ_done
@@ -841,8 +843,10 @@ void *serve_request(void *ptr)
 			assert(doc["table"].IsString());
 			string table1=doc["table"].GetString();
 
+
 			
 			//updating prev table of succ_of_succ to update own table of leader  
+
 
 			receive_table(client_fd,table1);
 
