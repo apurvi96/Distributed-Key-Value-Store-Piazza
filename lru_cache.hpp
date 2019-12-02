@@ -4,6 +4,15 @@
 #include<string>
 #include<algorithm>
 #include<unordered_map>
+#include <iostream>
+#include <map>
+using namespace std;
+class Node {
+  public:
+  string key, value;
+  Node *prev, *next;
+  Node(string k, string v): key(k), value(v), prev(NULL), next(NULL) {}
+};
 
 using namespace std;
 typedef long long int ll;
