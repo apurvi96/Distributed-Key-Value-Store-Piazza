@@ -158,7 +158,7 @@ int initialize_socket_without_bind()
 }
 void connect_f(int sock_fd, string ip,string port)
 {
-	//ip and ports are of the server you want to connect to
+
 	//converting port  to int
 	int port1=stoi(port);
 	//cout<<"connect port is "<<port1<<endl;
@@ -203,7 +203,7 @@ string receive_message(int ser_fd)
 {   //cout<<"ser_fd "<<ser_fd<<endl;
 	char Received_msg[BUFF_SIZE]={0};
     recv(ser_fd,Received_msg,BUFF_SIZE,0);
-    //cout<<"rec msg "<<Received_msg<<endl;
+    cout<<"rec msg "<<Received_msg<<endl;
     string Received_msg1=Received_msg;
     return Received_msg1;
 }

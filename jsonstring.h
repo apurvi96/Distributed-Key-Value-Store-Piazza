@@ -55,7 +55,7 @@ string put_update_CS(string req_type, string key, string value){
 	pre_ip , succ_ip , succ_of_succ_ip- ip:ports of these 3
 */
 string inform_leader_migration(string role, string pre_ip, string succ_ip, string s_of_succ_ip){
-	string inf = "{ \"role\" : \"”   +   role   +   ”\", \"pre_ip\" : \""   +pre_ip+   "\", \"succ_ip\" : \""   
+	string inf = "{ \"role\" : \""   +   role   +   "\", \"pre_ip\" : \""   +pre_ip+   "\", \"succ_ip\" : \""   
 				+succ_ip+   "\", \"succ_of_succ_ip\" : \""   +s_of_succ_ip+   "\"}";
 	return inf; 
 }

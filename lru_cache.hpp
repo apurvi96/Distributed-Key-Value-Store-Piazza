@@ -64,10 +64,12 @@ public:
 	//delete a node from cache
 	void deletenode(node *n1)
 	{
+
 		cout<<"count is "<<count<<endl;
 		count--;
 		mapvalues.erase(n1->key);
 		cout<<"erased from map"<<endl;
+
 		if(n1==NULL)
 			return;
 
@@ -100,6 +102,7 @@ public:
 		
 		free(n1);
 		cout<<"exiting deletenode"<<endl;
+
 	}
 
 	//create a node and push it to the front of deque

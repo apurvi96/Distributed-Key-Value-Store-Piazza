@@ -56,6 +56,26 @@ bool check_key_present(string table,string key)
 	return false;
 }
 
+void print_map(string map_name){
+
+	cout<<"----------------------------------------------"<<endl;
+	// if(map_name=="own"){
+		cout<<"Printing ownmap:"<<endl;
+		for(auto x: ownmap){
+			cout<<x.first<<"	"<<x.second<<endl;
+		}
+	// }
+
+	cout<<"----------------------------------------------"<<endl;
+
+	// if(map_name=="prev"){
+		cout<<"Printing prevmap:"<<endl;
+		for(auto x: prevmap){
+			cout<<x.first<<"	"<<x.second<<endl;
+		}
+	// }
+	cout<<"-----------------------------------------------"<<endl;
+}
 
 string handle_get(string jsonFromCS)
 {
@@ -242,7 +262,9 @@ void update_own(){
 int connect_pre(string ss_ip,string ss_port,string pre_ip1,string pre_port1,string role,string table)
 {
 
-	int sock_fd=initialize_socket(ss_ip,ss_port);
+	// int sock_fd=initialize_socket(ss_ip,ss_port);
+	int sock_fd=initialize_socket_without_bind();// SS that was acting as a server, now wants to communicate to 
+	//other SS as a client(to get their tables for data_migration)..hence no need to bind
 	connect_f(sock_fd,pre_ip1,pre_port1);
 	send_message(sock_fd,update_table_SS(role,table));
 	return sock_fd;
@@ -267,7 +289,7 @@ void send_table(int fd, string table){//1. leader will tell the pred to send its
 
 	cout<<"Here's the map content being sent: "<<resp<<endl;
 	send_message(fd, resp);
-
+	print_map("");
 	
 }
 
@@ -280,20 +302,21 @@ void receive_table(int sockfd, string table){// 1.leader will receive pred's own
 		return;
 	}
 	cout<<"Here's the map content recvd: "<<resp_table<<endl;
-	vector<char*> kv;
+	vector<string> kv;
 	char* keyval = strtok((char*)resp_table.c_str(), "|"); 
-	cout<<"keyval: "<<keyval<<endl;
+	// cout<<"keyval: "<<keyval<<endl;
 	kv.push_back(keyval);
-	while (keyval != NULL) {
-        keyval = strtok(NULL, "|"); 
-        cout<<keyval<<endl;
+	while ((keyval = strtok(NULL, "|"))!=NULL) {
+        // cout<<keyval<<endl;
         kv.push_back(keyval);
     }
 
+    cout<<"recvd table name: "<<table<<endl;
     if(table=="own"){
+    	cout<<"In own"<<endl;
     	ownmap.clear();
     	for(int i=0;i<kv.size();i++){
-			char* s=kv[i];
+			char* s=(char*)kv[i].c_str();
 			string key=strtok(s,":");
 			string val=strtok(NULL,":");
 			cout<<"key: "<<key<<" val: "<<val<<endl;
@@ -301,51 +324,87 @@ void receive_table(int sockfd, string table){// 1.leader will receive pred's own
 		}
     }
     if(table=="prev"){
+    	cout<<"In prev"<<endl;
     	prevmap.clear();
     	for(int i=0;i<kv.size();i++){
-			char* s=kv[i];
+    		// cout<<"In kv for"<<endl;
+			char* s=(char*)kv[i].c_str();
+			// cout<<"char* s in kv vect: "<<s<<endl;
 			string key=strtok(s,":");
+			// cout<<"key after STRTOK: "<<key<<" and s now: "<<s<<endl;
 			string val=strtok(NULL,":");
+			// cout<<"val after STRTOK: "<<val<<endl;
 			cout<<"key: "<<key<<" val: "<<val<<endl;;
 			prevmap[key]=val;
 		}
     }
+    print_map("");
 
 }
 
 void handle_leader(string ss_ip,string ss_port,int coord_fd)
 {
 	char *pre_ip1, *pre_port1, *succ_of_succ_ip1, *succ_of_succ_port1;
-	fetch_ip_ports(pre_ip1, pre_port1, succ_of_succ_ip1,succ_of_succ_port1);
-	cout<<"ip ports recvd: "<<pre_ip1<<" "<<pre_port1<<" "<<succ_of_succ_ip1<<" "<<succ_of_succ_port1<<endl;
 
-	//updating own table of leader(leader is the successor of the slave server that went down) using its prev table
-	update_own();
-	int sock_fd;
-	sock_fd=connect_pre(ss_ip,ss_port,pre_ip1,pre_port1,"pre","own");
-	receive_table(sock_fd,"prev");
 
-	close(sock_fd);
-	sock_fd=connect_pre(ss_ip,ss_port,succ_of_succ_ip1,succ_of_succ_port1,"succ_of_succ","prev");
-	receive_message(sock_fd);
-	send_table(sock_fd,"own");
-	send_message(coord_fd,send_message_ready("migration_completed"));
-	close(sock_fd);
-}
-//-----------------------functions to handle new register migration---------------------------------------------------------------
-void new_ss_fetch_ip_ports(char* pre_ip1, char* pre_port1,char* succ_ip1, char* succ_port1, char* succ_of_succ_ip1, char* succ_of_succ_port1){
+
 	assert(doc.HasMember("pre_ip"));
-	assert(doc.HasMember("succ_ip"));
+	// assert(doc.HasMember("succ_ip"));
 	assert(doc.HasMember("succ_of_succ_ip"));
 
 	assert(doc["pre_ip"].IsString());
-	assert(doc["succ_ip"].IsString());
+	// assert(doc["succ_ip"].IsString());
 	assert(doc["succ_of_succ_ip"].IsString());
 
 	string pre_ipport, succ_ipport, succ_of_succ_ipport;
 	pre_ipport=doc["pre_ip"].GetString();//has ip:port of predeceesor
-	succ_ipport=doc["succ_ip"].GetString();
+	// succ_ip_ipport=doc["succ_ip"].GetString();
 	succ_of_succ_ipport=doc["succ_of_succ_ip"].GetString();
+
+	// char* pre_ip1, pre_port1, succ_of_succ_ip1,succ_of_succ_port1;
+	pre_ip1=strtok((char*)pre_ipport.c_str(),":");
+	pre_port1=strtok(NULL,":");
+	succ_of_succ_ip1=strtok((char*)succ_of_succ_ipport.c_str(),":");
+	succ_of_succ_port1=strtok(NULL,":");
+	// cout<<"ip ports being fetched: "<<pre_ip1<<" "<<pre_port1<<" "<<succ_of_succ_ip1<<" "<<succ_of_succ_port1<<endl;
+
+
+
+	// fetch_ip_ports(pre_ip1, pre_port1, succ_of_succ_ip1,succ_of_succ_port1);
+	cout<<"ip ports recvd: "<<pre_ip1<<" "<<pre_port1<<" "<<succ_of_succ_ip1<<" "<<succ_of_succ_port1<<endl;
+
+	//updating own table of leader(leader is the successor of the slave server that went down) using its prev table
+	update_own();
+
+	//updating prev table of leader using own table of predecessor
+	int sock_fd;
+	sock_fd=connect_pre(ss_ip,ss_port,pre_ip1,pre_port1,"pre","own");
+	receive_table(sock_fd,"prev");
+
+	close(sock_fd); //TODO : needed?
+
+	//sending own table of leader to update prev table of succ_of_succ 
+	sock_fd=connect_pre(ss_ip,ss_port,succ_of_succ_ip1,succ_of_succ_port1,"succ_of_succ","prev");
+	receive_message(sock_fd);//msg recvd: ready_for_table
+	send_table(sock_fd,"own");
+
+	send_message(coord_fd,send_message_ready("migration_completed"));//sending to CS
+	close(sock_fd);
+}
+//-----------------------functions to handle new register migration---------------------------------------------------------------
+void new_ss_fetch_ip_ports(char* pre_ip1, char* pre_port1,char* succ_ip1, char* succ_port1, char* succ_of_succ_ip1, char* succ_of_succ_port1){
+	assert(doc2.HasMember("pre_ip"));
+	assert(doc2.HasMember("succ_ip"));
+	assert(doc2.HasMember("succ_of_succ_ip"));
+
+	assert(doc2["pre_ip"].IsString());
+	assert(doc2["succ_ip"].IsString());
+	assert(doc2["succ_of_succ_ip"].IsString());
+
+	string pre_ipport, succ_ipport, succ_of_succ_ipport;
+	pre_ipport=doc2["pre_ip"].GetString();//has ip:port of predeceesor
+	succ_ipport=doc2["succ_ip"].GetString();
+	succ_of_succ_ipport=doc2["succ_of_succ_ip"].GetString();
 
 	// char* pre_ip1, pre_port1, succ_of_succ_ip1,succ_of_succ_port1;
 
@@ -363,7 +422,8 @@ void new_ss_fetch_ip_ports(char* pre_ip1, char* pre_port1,char* succ_ip1, char* 
 
 int new_ss_connect(string ss_ip,string ss_port,string succ_ip,string succ_port,string role,string pre_ip_to_send,string ss_ip_to_send,string succ_of_succ_ip_to_send)
 {
-	int sock_fd=initialize_socket(ss_ip,ss_port);
+	// int sock_fd=initialize_socket(ss_ip,ss_port);
+	int sock_fd=initialize_socket_without_bind();
 	connect_f(sock_fd,succ_ip,succ_port);
 	send_message(sock_fd,inform_leader_migration(role,pre_ip_to_send,ss_ip_to_send,succ_of_succ_ip_to_send));
 	return sock_fd;
@@ -371,8 +431,41 @@ int new_ss_connect(string ss_ip,string ss_port,string succ_ip,string succ_port,s
 
 void handle_new_ss_leader(string new_ss_ip,string new_ss_port,string mig_from_cs)
 {
+	cout<<"Inside handle_new_ss_leader"<<endl;
 	char *pre_ip1, *pre_port1,*succ_ip1, *succ_port1, *succ_of_succ_ip1, *succ_of_succ_port1;
-	new_ss_fetch_ip_ports(pre_ip1, pre_port1,succ_ip1,succ_port1,succ_of_succ_ip1,succ_of_succ_port1);
+
+
+
+
+	assert(doc2.HasMember("pre_ip"));
+	assert(doc2.HasMember("succ_ip"));
+	assert(doc2.HasMember("succ_of_succ_ip"));
+
+	assert(doc2["pre_ip"].IsString());
+	assert(doc2["succ_ip"].IsString());
+	assert(doc2["succ_of_succ_ip"].IsString());
+
+	string pre_ipport, succ_ipport, succ_of_succ_ipport;
+	pre_ipport=doc2["pre_ip"].GetString();//has ip:port of predeceesor
+	succ_ipport=doc2["succ_ip"].GetString();
+	succ_of_succ_ipport=doc2["succ_of_succ_ip"].GetString();
+
+	// char* pre_ip1, pre_port1, succ_of_succ_ip1,succ_of_succ_port1;
+
+	pre_ip1=strtok((char*)pre_ipport.c_str(),":");
+	pre_port1=strtok(NULL,":");
+	succ_ip1=strtok((char*)succ_ipport.c_str(),":");
+	succ_port1=strtok(NULL,":");
+	
+	succ_of_succ_ip1=strtok((char*)succ_of_succ_ipport.c_str(),":");
+	succ_of_succ_port1=strtok(NULL,":");
+	// cout<<"ip ports being fetched: "<<pre_ip1<<" "<<pre_port1<<" "<<succ_of_succ_ip1<<" "<<succ_of_succ_port1<<endl;
+
+
+
+
+
+	// new_ss_fetch_ip_ports(pre_ip1, pre_port1,succ_ip1,succ_port1,succ_of_succ_ip1,succ_of_succ_port1);
 	cout<<"ip ports recvd: "<<pre_ip1<<" "<<pre_port1<<" "<<succ_ip1<<" "<<succ_port1<<" "<<succ_of_succ_ip1<<" "<<succ_of_succ_port1<<endl;
 
 	int sockfd;
@@ -392,17 +485,56 @@ void handle_new_ss_leader(string new_ss_ip,string new_ss_port,string mig_from_cs
 
 void update_new_ss_own(int llimit, int ulimit){
 	prevmap.clear();
-	for(auto x:ownmap){
-		int hashed_key=consistent_hash(x.first);
-		if(llimit<=hashed_key && hashed_key<ulimit){
-			prevmap[x.first]=x.second;//have put value from ownmap to its prevmap
-			ownmap.erase(x.first);
+	vector<string> keys_to_delete;
+	if(llimit<ulimit){
+		for(auto x:ownmap){
+			int hashed_key=consistent_hash(x.first);
+
+			cout<<"0. key: "<<x.first<<", hashed key: "<<hashed_key<<endl;
+
+			if(llimit<=hashed_key && hashed_key<ulimit)
+			{
+				cout<<"0.entered if for hashed key: "<<hashed_key<<endl;
+				prevmap.insert({x.first,x.second});//have put value from ownmap to its prevmap
+				cout<<"0.have put value from ownmap to its prevmap"<<endl;
+				keys_to_delete.push_back(x.first);
+				// ownmap.erase(x.first);//don't modify map while accessing its elements (in for)
+			}
+		}
+		for(int i=0;i<keys_to_delete.size();i++){
+			ownmap.erase(keys_to_delete[i]);
 		}
 	}
+	
+	else if(llimit>ulimit){//due to ring
+		cout<<"ownmap size:"<<ownmap.size()<<endl;
+		for(auto x:ownmap){
+			int hashed_key=consistent_hash(x.first);
+
+			cout<<"1. key: "<<x.first<<", hashed key: "<<hashed_key<<endl;
+
+			if((llimit<=hashed_key && hashed_key<RING_SIZE) || (0<=hashed_key && hashed_key<ulimit))
+			{
+				cout<<"1.entered if for hashed key: "<<hashed_key<<endl;
+				prevmap.insert({x.first,x.second});//have put value from ownmap to its prevmap
+				cout<<"1.have put value from ownmap to its prevmap"<<endl;
+				keys_to_delete.push_back(x.first);
+				// ownmap.erase(x.first);//don't modify map while accessing its elements (in for)
+			}
+		}
+		for(int i=0;i<keys_to_delete.size();i++){
+			ownmap.erase(keys_to_delete[i]);
+		}
+	}
+	else{
+		cout<<"OH! llimit==ulimit"<<endl;
+	}
+
 }
 
 void handle_new_ss_succ(string jsonFromSS, string ip_address,string port_number)
 {
+	cout<<"Entered handle_new_ss_succ"<<endl;
 	char *succ_of_succ_ip1, *succ_of_succ_port1;
 
 	//For consistent hashing, get pre_ip:port, succ_of_succ_ip:port, and to connect to succ_of_succ, get the ip and port of succ_of_succ separately
@@ -426,14 +558,22 @@ void handle_new_ss_succ(string jsonFromSS, string ip_address,string port_number)
 	succ_of_succ_port1=strtok(NULL,":");
 	cout<<"ip ports being fetched: "<<succ_of_succ_ip1<<" "<<succ_of_succ_port1<<endl;
 
-
+	cout<<"Param being passed to consistent_hash:- pre_ipport: "<<pre_ipport<<" new_ss_ipport: "<<new_ss_ipport<<endl;
 	int lower_limit=consistent_hash(pre_ipport);
+	cout<<"lower limit: "<<lower_limit<<endl;
 	int upper_limit=consistent_hash(new_ss_ipport);
+	cout<<"upper_limit: "<<upper_limit<<endl;
 	update_new_ss_own(lower_limit, upper_limit);
+
+	if(ip_address==succ_of_succ_ip1 && port_number==succ_of_succ_port1){
+		return;
+	}
 	int fd=new_ss_connect(ip_address, port_number, succ_of_succ_ip1, succ_of_succ_port1, "new_ss_succ_of_succ", "","","");
-	receive_message(fd);//receives ack here other slave server
+	string rmsg=receive_message(fd);//receives ack here other slave server: ready_for_table
+	cout<<"revcd msg after new_ss_connect:"<<rmsg<<endl;
 	send_table(fd, "own");
-	receive_message(fd); //TODO: check..needed?
+	string rmsg1=receive_message(fd); //recvd msg (from SS): ack+new_ss_succ_of_succ_done
+	cout<<"revcd msg1 after new_ss_connect:"<<rmsg1<<endl;
 	close(fd);
 
 }
@@ -474,41 +614,45 @@ void *heartbeat_conn(void *ptr){
 	//parse receive msg
 
 	if(doc1.ParseInsitu((char*)recv_msg.c_str()).HasParseError()){
-			cout << "Error while parsing the json string recvd from CS (for finding message). Try again" << endl;
-			send_message(fd, ack_data_string("ack", "parse_error"));
-			pthread_exit(NULL);
+		cout << "Error while parsing the json string recvd from CS (for finding message). Try again. json string: " << recv_msg<<endl;
+		send_message(fd, ack_data_string("ack", "parse_error"));
+		pthread_exit(NULL);
 	}
 
 	assert(doc1.IsObject());
-	assert(doc1.HasMember("message")); //checks if doc has member named "role"
+	assert(doc1.HasMember("message")); //checks if doc1 has member named "role"
 	assert(doc1["message"].IsString());
 	
 	string message=doc1["message"].GetString();
 
 	if(message=="migration_new_server")
 	{
-			send_message(fd, ack_data_string("ack","ready_for_migration"));
+		send_message(fd, ack_data_string("ack","ready_for_migration"));//sending to CS
 
-			string mig_from_cs=receive_message(fd);
+		cout<<"waiting to recv msg having ip ports of 3 from CS"<<endl;
+		string mig_from_cs=receive_message(fd);//msg recvd: new_SS_leader + ip:ports of pre, succ, succ_of_succ
+		cout<<"recvd msg to new server..migration time: "<<mig_from_cs<<endl;
 
-			//extract role
-			if(doc2.ParseInsitu((char*)mig_from_cs.c_str()).HasParseError()){
-				cout << "Error while parsing the json string recvd from CS (for finding role). Try again" << endl;
-				send_message(fd, ack_data_string("ack", "parse_error"));
-				pthread_exit(NULL);
-			}
+		//extract role
+		if(doc2.ParseInsitu((char*)mig_from_cs.c_str()).HasParseError()){
+			cout << "Error while parsing the json string recvd from CS (for finding role). Try again. json string: " << mig_from_cs << endl;
+			send_message(fd, ack_data_string("ack", "parse_error"));
+			pthread_exit(NULL);
+		}
 
-			assert(doc2.IsObject());
-			assert(doc2.HasMember("role")); //checks if doc has member named "role"
-			assert(doc2["role"].IsString());
-			string role=doc2["role"].GetString();
+		assert(doc2.IsObject());
+		assert(doc2.HasMember("role")); //checks if doc2 has member named "role"
+		assert(doc2["role"].IsString());
+		string role=doc2["role"].GetString();
 
-			//Newly registered Slave Server is the new_ss_leader
-			if(role=="new_ss_leader")
-			{
-				handle_new_ss_leader(ss_ip,ss_port,mig_from_cs);
-				send_message(fd,ack_data_string("ack","migration_ss_done"));
-			}
+		cout<<"role of new server: "<<role<<endl;
+
+		//Newly registered Slave Server is the new_ss_leader
+		if(role=="new_ss_leader")
+		{
+			handle_new_ss_leader(ss_ip,ss_port,mig_from_cs);
+			send_message(fd,ack_data_string("ack","migration_ss_done"));
+		}
 	}
 	close(fd);
 
@@ -543,9 +687,6 @@ void *heartbeat_conn(void *ptr){
 
 	}
 
-	
-	
-
 }
 
 //------------------thread that serves requests that it'll get from CS-------------------------------------------------------
@@ -572,10 +713,12 @@ void *serve_request(void *ptr)
 	while((client_fd=accept(sock_fd,(struct sockaddr *)&ip_client,(socklen_t*)&ip_client_length))>0)
 	{
 		string jsonFromCS, role;
+		cout<<"Inside while(accept) in serveReq"<<endl;
 
 		jsonFromCS=receive_message(client_fd);//msg recvd: {role} + ip:ports of pre, succ(self), succ_of_succ
+		cout<<"recvd msg: "<<jsonFromCS<<endl;
 		if(doc.ParseInsitu((char*)jsonFromCS.c_str()).HasParseError()){
-			cout << "Error while parsing the json string recvd from CS (for finding role). Try again" << endl;
+			cout << "Error while parsing the json string recvd from CS (for finding role). Try again. json string: " << jsonFromCS << endl;
 			send_message(client_fd, ack_data_string("ack", "parse_error"));
 			continue;
 		}
@@ -585,25 +728,53 @@ void *serve_request(void *ptr)
 		assert(doc["role"].IsString());
 		
 		role=doc["role"].GetString();
+		cout<<"role(@serve_request): "<<role<<endl;
 
 		if(role=="get"){
 			string val=handle_get(jsonFromCS);
 			if(val=="key_error") send_message(client_fd, ack_data_string("ack", val));
 			else send_message(client_fd, ack_data_string("data", val));//val will be the value corres to the key
+			print_map("");
 		}
 		else if(role=="put"){
 			handle_put(jsonFromCS);
 
-			cout<<"Key given: "<<doc["key"].GetString()<<"; Value put: "<<ownmap[doc["key"].GetString()]<<endl;
+			assert(doc.HasMember("table"));
+			assert(doc["table"].IsString());
+			string table=doc["table"].GetString();
+
+			if(table=="own")
+			{
+				cout<<"Key given: "<<doc["key"].GetString()<<"; Value put: "<<ownmap[doc["key"].GetString()]<<endl;
+			}
+
+			else if(table=="prev")
+			{
+				cout<<"Key given: "<<doc["key"].GetString()<<"; Value put: "<<prevmap[doc["key"].GetString()]<<endl;
+			}
+
+			
 			send_message(client_fd, ack_data_string("ack", "put_success"));//no poss of key_error in put
+			print_map(table);
+
 		}
 		else if(role=="update"){
 			string val=handle_update(jsonFromCS);
 			send_message(client_fd, ack_data_string("ack", val));//val will be either update_success or key_error
+
+			assert(doc.HasMember("table"));
+			assert(doc["table"].IsString());
+			string table=doc["table"].GetString();
+			print_map(table);
+
 		}
 		else if(role=="delete"){
 			string val=handle_delete(jsonFromCS);
 			send_message(client_fd, ack_data_string("ack", val));//val will be either delete_success or key_error
+			assert(doc.HasMember("table"));
+			assert(doc["table"].IsString());
+			string table=doc["table"].GetString();
+			print_map(table);
 		}		
 		else if(role=="leader"){
 			handle_leader(ip_address,port_number,client_fd);
@@ -614,8 +785,6 @@ void *serve_request(void *ptr)
 			assert(doc["table"].IsString());
 			string table1=doc["table"].GetString();
 			send_table(client_fd,table1);
-			
-
 		}
 		else if(role=="succ_of_succ"){
 			send_message(client_fd,send_message_ready("ready_for_table"));
@@ -623,6 +792,7 @@ void *serve_request(void *ptr)
 			assert(doc["table"].IsString());
 			string table1=doc["table"].GetString();
 			
+			//updating prev table of succ_of_succ to update own table of leader  
 			receive_table(client_fd,table1);
 
 		}
@@ -641,7 +811,7 @@ void *serve_request(void *ptr)
 		else if(role=="new_ss_succ_of_succ")
 		{
 			send_message(client_fd, send_message_ready("ready_for_table"));
-			receive_table(client_fd, "prev");
+			receive_table(client_fd, "prev");//(new server)receives own table of new server's succr in its prev table
 			send_message(client_fd, ack_data_string("ack", "new_ss_succ_of_succ_done"));
 		}
 		else{
