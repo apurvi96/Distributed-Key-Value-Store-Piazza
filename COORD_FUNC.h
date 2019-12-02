@@ -950,9 +950,7 @@ void request_of_client(int connectfd,string ip_port_cs)
     string s;
     while(1)
     {
-        /* TODO Coord mar ra h client k jate hi why why why??? 
-            
-        */
+        
         
 
         s=receive_message(connectfd);        // received type: put,get,delete,update+key+value
@@ -1015,9 +1013,7 @@ void request_of_client(int connectfd,string ip_port_cs)
         {   
             
 
-            /* TODO  
-                check in cache if present delete and continue
-            */
+            
             assert(document1.IsObject());
             assert(document1.HasMember("key"));
             string key_v=document1["key"].GetString();
@@ -1031,9 +1027,7 @@ void request_of_client(int connectfd,string ip_port_cs)
         else if(strcmp(document1["req_type"].GetString(),"update")==0)
         {  
             
-          /*TODO  
-            Check if present in cache then update also in cache and continue
-            */
+          
 
             assert(document1.IsObject());
             assert(document1.HasMember("key"));
