@@ -8,7 +8,7 @@
 using namespace rapidjson;
 using namespace std;
 
-Document document1;
+
 
 #define FILENAME "cs_config.txt"
 
@@ -16,7 +16,7 @@ Document document1;
 
 void request_for_get_delete(string type,string key,int sock_fd)
 {
-
+   Document document1;
    send_message(sock_fd,get_delete_CS(type,key));
    string value_json=receive_message(sock_fd);
    if(document1.ParseInsitu((char*)value_json.c_str()).HasParseError())
@@ -60,7 +60,7 @@ void request_for_get_delete(string type,string key,int sock_fd)
 
 void request_for_update_put(string type,string key,string value, int sock_fd)
 {
-
+  Document document1;
    send_message(sock_fd,put_update_CS(type,key,value));
    string value_json=receive_message(sock_fd);
    if(document1.ParseInsitu((char*)value_json.c_str()).HasParseError())
