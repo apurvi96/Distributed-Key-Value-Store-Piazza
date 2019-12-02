@@ -249,11 +249,13 @@ void* heartbeat_func(void* threadargs)
     string receive_val;
     while(1)
     {
+
         receive_val=receive_message(connectfd);     // received msg from SS: heartbeat + ip:port
         cout<<receive_val<<endl;
+
         if(document1.ParseInsitu((char*)receive_val.c_str()).HasParseError())
         {
-            cout<<"error in request for client parsing string"<<endl;
+            cout<<"error in request for client parsing string."<<endl;
         }
         
         else if(strcmp(document1["req_type"].GetString(),"heartbeat")==0)
