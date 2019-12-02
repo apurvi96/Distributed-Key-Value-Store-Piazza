@@ -6,6 +6,7 @@
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
 #include "jsonstring.h"
+#include <semaphore.h>
 
 using namespace rapidjson;
 
@@ -17,6 +18,10 @@ using namespace std;
 
 map<string, string> ownmap;
 map<string, string> prevmap;
+
+int readers=0;//indicating there are no readers in critical section
+int writers=1;//Allowing 1 writer at a time in critical section
+mutex mx;
 
 struct thread_data
 {
@@ -122,7 +127,6 @@ void handle_put(string jsonFromCS)
 	assert(doc["table"].IsString());
 	assert(doc["key"].IsString());
 	assert(doc["value"].IsString());
-
 
 	string table=doc["table"].GetString();
 	string key=doc["key"].GetString();
@@ -733,13 +737,37 @@ void *serve_request(void *ptr)
 		cout<<"role(@serve_request): "<<role<<endl;
 
 		if(role=="get"){
+			//----------locking--------------------
+			int flag=0; //setting flag in each reader(1st) to know if it has acquired lock then it should unlock while exiting cs
+			if(writers==0){//i.e a writer is in critical section
+				mx.lock();//1st reader will try to acquire lock; 
+				flag=1;//1st reader will set flag=1 to know it has acquired the lock and need to release it
+			}
+			readers++;//count of readers in critical section
 			string val=handle_get(jsonFromCS);
+
 			if(val=="key_error") send_message(client_fd, ack_data_string("ack", val));
 			else send_message(client_fd, ack_data_string("data", val));//val will be the value corres to the key
+
+			readers--;//decremented as soon as a reader exits critical section
+			if(flag==1){
+				mx.unlock();//release the lock if acquired identified with the help of flag
+			}
+			//---------unlocked--------------------
+
 			print_map("");
 		}
 		else if(role=="put"){
+			//---------implementing lock------------
+			mx.lock();
+			while(readers!=0);
+			writers--;
+
 			handle_put(jsonFromCS);
+
+			writers++;
+			mx.unlock();
+			//---------unlocked--------------------
 
 			assert(doc.HasMember("table"));
 			assert(doc["table"].IsString());
@@ -761,8 +789,17 @@ void *serve_request(void *ptr)
 
 		}
 		else if(role=="update"){
+			//---------implementing lock------------
+			mx.lock();
+			while(readers!=0);
+			writers--;
+
 			string val=handle_update(jsonFromCS);
 			send_message(client_fd, ack_data_string("ack", val));//val will be either update_success or key_error
+
+			writers++;
+			mx.unlock();
+			//---------unlocked--------------------
 
 			assert(doc.HasMember("table"));
 			assert(doc["table"].IsString());
@@ -771,8 +808,18 @@ void *serve_request(void *ptr)
 
 		}
 		else if(role=="delete"){
+			//----------locking--------------------
+			mx.lock();
+			while(readers!=0);
+			writers--;
+
 			string val=handle_delete(jsonFromCS);
 			send_message(client_fd, ack_data_string("ack", val));//val will be either delete_success or key_error
+
+			writers++;
+			mx.unlock();
+			//---------unlocked--------------------
+			
 			assert(doc.HasMember("table"));
 			assert(doc["table"].IsString());
 			string table=doc["table"].GetString();
