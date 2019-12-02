@@ -8,7 +8,7 @@
 using namespace rapidjson;
 using namespace std;
 
-
+Document document1;
 
 #define FILENAME "cs_config.txt"
 
@@ -16,9 +16,10 @@ using namespace std;
 
 void request_for_get_delete(string type,string key,int sock_fd)
 {
-   Document document1;
+
    send_message(sock_fd,get_delete_CS(type,key));
    string value_json=receive_message(sock_fd);
+   cout<<"recvd msg: "<<value_json<<endl;
    if(document1.ParseInsitu((char*)value_json.c_str()).HasParseError())
    {
        cout<<"error in request for client parsing string"<<endl;
@@ -60,10 +61,14 @@ void request_for_get_delete(string type,string key,int sock_fd)
 
 void request_for_update_put(string type,string key,string value, int sock_fd)
 {
-  Document document1;
+
    send_message(sock_fd,put_update_CS(type,key,value));
-   string value_json=receive_message(sock_fd);
+   string value_json=receive_message(sock_fd);// 1) ack+no_slave_server_active
+                                              // 2) ack+put_success  
+                                              // 3) ack+commit_failed
+   cout<<"recvd msg:: "<<value_json<<endl;
    if(document1.ParseInsitu((char*)value_json.c_str()).HasParseError())
+
    {
        cout<<"error in request for client parsing string"<<endl;
    }
@@ -75,7 +80,8 @@ void request_for_update_put(string type,string key,string value, int sock_fd)
             assert(document1.HasMember("message"));
 
             string value1=document1["message"].GetString();
-            cout<<"value for the "<<key<<" is "<<value1<<endl;
+            cout<<value1<<endl;
+
 
 
     }
@@ -125,6 +131,7 @@ int main(int argc,char **argv)
 	}
     cout<<" cs ip "<<cs_ip<<" port"<<cs_port<<endl;
     connect_f(sock_fd,cs_ip,cs_port);
+    cout<<"after connect_f "<<endl;
 	cout<<receive_message(sock_fd)<<endl;
     cout<<"connected in client"<<endl;
     send_message(sock_fd,identity_string("client"));
@@ -139,13 +146,26 @@ int main(int argc,char **argv)
      cout<<"command >> ";
      cin>>command;
 
+     if(command=="exit")
+     {
+     	cout<<"TATA!!!! "<<endl;
+     	return 0;
+     }
+     
      char *command_char=(char*)command.c_str();
      string type=strtok(command_char,":");
+
+
     
      if(type=="get"||type=="delete")
      {
         char *get_char=strtok(NULL,":");
      	string key=get_char;
+     	// if(key==NULL)
+     	// {
+     	// 	cout<<"wrong command enter again\n";
+     	// 	continue;
+     	// }
      	request_for_get_delete(type,key,sock_fd);
      } 
 
@@ -154,11 +174,21 @@ int main(int argc,char **argv)
      {
         char *get_char=strtok(NULL,":");
      	string key=get_char;
+     	// if(key==NULL)
+     	// {
+     	// 	cout<<"wrong command enter again\n";
+     	// 	continue;
+     	// }
      	char *get_val=strtok(NULL,":");
      	string value=get_val;
+     	// if(value==NULL)
+     	// {
+     	// 	cout<<"wrong command enter again\n";
+     	// 	continue;
+     	// }
        request_for_update_put(type,key,value,sock_fd);
      }
-
+    cout<<endl;
 
    }
 
