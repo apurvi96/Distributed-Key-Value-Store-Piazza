@@ -24,7 +24,7 @@ must be migrated to ensure the required redundancy.<br>
 
 </ol>
 <b><i>Case 2: When a Servers goes down:-</i></b>
-<ol>
+<ol type="i">
 <li>The successor, predecessor and successor of successor is found out using the hashed id of the dead slave.</li>
 <li>The successor(also known as leader) of dead slave is supposed to copy the content of it's 'previous' hash table to it's 'own' hash table All the values lying between predecessor and the successor of the dead slave, will now move to successor of dead slave; so we copy the previous of dead slave to own of successor.</li>
 <li>The successor then sends the values of it's updated 'own' table to it's successor i.e successor of successor of the dead slave server.</li></ol>
@@ -34,7 +34,7 @@ and count of map is increamented on receiving of each alive msg.<br> A dedicated
 <h2>Compile and Run Program</h2>
 <ol>
 <li>Compile Coordination_Server.cpp (use -lpthreads to support pthreads) and run it as:<br> ./coord &ltip&gt&ltport&gt</li>
-<li>Register Slave Servers at the CS by running slaveServer.cpp as: <br>./slave <ip><port></li>
+<li>Register Slave Servers at the CS by running slaveServer.cpp as: <br>./slave &ltip&gt&ltport&gt</li>
 <li>Multiple clients can connect to the Coordination Server by running client.cpp as: <br>./client &ltip&gt&ltport&gt</li></ol>
 A file "cs_config.txt" contains ip and port of the Coordination Server.
   
