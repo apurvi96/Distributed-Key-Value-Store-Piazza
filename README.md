@@ -10,10 +10,10 @@
  They register or login to the system and access the data using following opeartions:
  <ol type="i"><li>GET &ltkey&GT</li><li>PUT &ltkey&gt &ltvalue&gt</li><li>DELETE &ltkey&gt</li><li>UPDATE &ltkey&gt &ltnew_value&gt</li>
   </ol></li><br>
-  <li><b><i>Coordination Server</i></b><br><ul type="disc"><li>Acts as an intermediate between the clients and slave server.</li><li>Whenever a new slave server registers itself, Coordination Server hashes the ip:port of the Slave Server. Each Slave Server is hashed and placed in a ring structure.</li><li>Whenever a client sends a request, key is hashed and and placed in the own table of next nearest hashed slave server and also in the prev table of the predecessor of this slave server.</li>
-<li><b>WRITE THROUGH CACHE:</b>The coordinator contains a write-through LRU cache, and it uses the cache to serve requests without going to the (slave) key-value servers it coordinates. The slave key-value servers are contacted for a request only upon a cache miss on the coordinator.</li></ul>
+  <li><b><i>Coordination Server</i></b><br><ol type="i"><li>Acts as an intermediate between the clients and slave server.</li><li>Whenever a new slave server registers itself, Coordination Server hashes the ip:port of the Slave Server. Each Slave Server is hashed and placed in a ring structure.</li><li>Whenever a client sends a request, key is hashed and and placed in the own table of next nearest hashed slave server and also in the prev table of the predecessor of this slave server.</li>
+<li><b>WRITE THROUGH CACHE:</b>The coordinator contains a write-through LRU cache, and it uses the cache to serve requests without going to the (slave) key-value servers it coordinates. The slave key-value servers are contacted for a request only upon a cache miss on the coordinator.</li></ol>
   </li><br>
-  <li><b><i>Slave Servers</b></i><br>Stores the actual data,i.e, key-value pair. Each slave server consistes of two tables:<ul type="disc"><li>OWN TABLE : stores the first copies of keys with hash values greater than the ID of its immediate predecessor up to its own ID.</li><li>PREV TABLE : stores the keys whose first copies are stored in its predecessor.</li></ul></li></ol>
+  <li><b><i>Slave Servers</b></i><br>Stores the actual data,i.e, key-value pair. Each slave server consistes of two tables:<ol type="i"><li>OWN TABLE : stores the first copies of keys with hash values greater than the ID of its immediate predecessor up to its own ID.</li><li>PREV TABLE : stores the keys whose first copies are stored in its predecessor.</li></ol></li></ol>
   
   <h2>Data Migration</h2>
  At any time, a key should be replicated in two slave servers. So whenever a new Server comes up or a Server goes down, data
@@ -37,4 +37,5 @@ and count of map is increamented on receiving of each alive msg.<br> A dedicated
 <li>Register Slave Servers at the CS by running slaveServer.cpp as: <br>./slave <ip><port></li>
 <li>Multiple clients can connect to the Coordination Server by running client.cpp as: <br>./client &ltip&gt&ltport&gt</li></ol>
 A file "cs_config.txt" contains ip and port of the Coordination Server.
+  
 
