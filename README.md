@@ -19,7 +19,14 @@
  At any time, a key should be replicated in two slave servers. So whenever a new Server comes up or a Server goes down, data
 must be migrated to ensure the required redundancy.<br>
 <b><i>Case 1: When a new Server registers:-</i></b><ol>
-  <li>dff</li>
+   <li>Predecessor, successor and successor of successor are found using hashed id of new registered slave server.</li>
+  <li>Successor updates its 'own' table by removing keys hashed between predecessor and new registered server.</li>
+<li>These removed keys are filled in 'previous' table of successor server.</li>
+  <li>Removed keys are filled in 'own' table of newly registered slave server.</li>
+<li>Newly registered slave server updates its 'previous' table with 'own' table of predecessor.</li>
+  <li>Successor of successor updates its 'previous' table with 'own' table of successor.</li>
+
+
 
 
 </ol>
